@@ -1,8 +1,6 @@
-package ru.volganap.nikolay.excavate_coordinator;
+package ru.volganap.nikolay.haircut_schedule;
 
-import com.google.android.gms.maps.model.LatLng;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 
 public class DepLinesData implements Enums {
@@ -15,7 +13,6 @@ public class DepLinesData implements Enums {
 
     private HashMap<String, Approvement> exist;
     private HashMap<String, String> dt_approve;
-    private HashMap<String, ArrayList<ArrayList<LatLng>> > lines;
 
     public DepLinesData() {
     }
@@ -42,7 +39,6 @@ public class DepLinesData implements Enums {
 
     HashMap<String, Approvement> getHashmapCommExist() {return exist;}
     HashMap<String, String> getDateApproveHashmap() {return dt_approve;}
-    HashMap<String, ArrayList<ArrayList<LatLng>>> getLinesHashmap() {return lines;}
 
     Approvement getPermitApproved() {
         Approvement permit_approved = Approvement.YES;
@@ -75,6 +71,5 @@ public class DepLinesData implements Enums {
 
     void setDateApproveHashmap(HashMap<String, String> dt_approve) {this.dt_approve = dt_approve;}
 
-    void setLinesHashmap(HashMap<String, ArrayList<ArrayList<LatLng>>> lines) {this.lines = lines;}
 
 }

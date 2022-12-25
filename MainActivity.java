@@ -1,6 +1,7 @@
-package ru.volganap.nikolay.excavate_coordinator;
+package ru.volganap.nikolay.haircut_schedule;
 
 import android.Manifest;
+import android.app.FragmentManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -8,6 +9,8 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.graphics.Color;
 import android.os.Bundle;
@@ -30,7 +33,7 @@ import java.util.Map;
 
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
-public class MainActivity extends AppCompatActivity implements KM_Constants, Enums, Contract.ViewMain{
+public class MainActivity extends AppCompatActivity implements KM_Constants, Enums, Contract.ViewMain, Contract.ActivityReciever {
 
     private static final String DEFAULT_MAX_RECORDS = "25";
 
@@ -38,12 +41,12 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
     private SharedPreferences.OnSharedPreferenceChangeListener prefChangeListener;
 
     // Main activity layout
-    private EditText et_permit_place, et_permit_date_start, et_permit_date_end, et_permit_comment;
-    private Button bt_fill_permit, bt_check_request, bt_put_show_comm, bt_permit_exit, bt_deps_choose, bt_delete;
-    private ListView lv_deps_choose;
+    //private EditText et_permit_place, et_permit_date_start, et_permit_date_end, et_permit_comment;
+    private Button bt_prev_day, bt_next_day, bt_add_rec, bt_add_client, bt_exit, bt_show_clients;
+    private ListView lv_records_list;
 
-    LinearLayout ll_permit_data;
-    ViewGroup.LayoutParams params;
+    //LinearLayout ll_permit_data;
+    //ViewGroup.LayoutParams params;
 
     private BroadcastReceiver mainBroadcastReceiver;
     Contract.PresenterMain presenterMain;
@@ -52,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Log.d(LOG_TAG, "Main - onCreate ");
         // Init Main activity layout
         initMainViewLayout();
         // instantiating object of Presenter Interface
@@ -60,30 +64,247 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
         initSharedPreferences();
         // Init BroadcastReceiver
         initBroadcastReceiver();
+        //load new Record Data Fragment
+        //loadFragment(RecordDataFragment.newInstance(5, "my title"));
     }
 
     private void initMainViewLayout() {
         // Main ViewLayout
-        bt_fill_permit = findViewById(R.id.bt_fill_permit);
-        bt_check_request = findViewById(R.id.bt_check_request);
+        bt_prev_day = findViewById(R.id.bt_prev_day);
+        bt_next_day = findViewById(R.id.bt_next_day);
+        bt_add_rec = findViewById(R.id.bt_add_rec);
+        bt_add_client = findViewById(R.id.bt_add_client);
+        bt_exit = findViewById(R.id.bt_exit);
+        bt_show_clients = findViewById(R.id.bt_show_clients);
 
-        et_permit_place = findViewById(R.id.et_permit_place);
+        lv_records_list = findViewById(R.id.lv_records_list);
+        lv_records_list.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+
+
+        /*et_permit_place = findViewById(R.id.et_permit_place);
         et_permit_date_start = findViewById(R.id.et_permit_date_start);
         et_permit_date_end = findViewById(R.id.et_permit_date_end);
-        et_permit_comment = findViewById(R.id.et_permit_comment);
+        et_permit_comment = findViewById(R.id.et_permit_comment); */
 
-        bt_deps_choose = findViewById(R.id.bt_deps_choose);
-        bt_delete = findViewById(R.id.bt_delete);
-        bt_put_show_comm = findViewById(R.id.bt_put_show_comm);
-        bt_permit_exit = findViewById(R.id.bt_permit_exit);
+        //ll_permit_data = findViewById(R.id.ll_permit_data);
+    }
 
-        lv_deps_choose = findViewById(R.id.lv_deps_choose);
-        lv_deps_choose.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+    private void initSharedPreferences() {
+        sharedPrefs = getSharedPreferences(PREF_ACTIVITY, MODE_PRIVATE);
 
-        ll_permit_data = findViewById(R.id.ll_permit_data);
+        prefChangeListener = (sharedPreferences, key) -> {
+            Log.d(LOG_TAG, "Main - prefChangeListener triggered on: " +key);
+
+            presenterMain.onChangeSharedPrefs( key );
+        };
+        sharedPrefs.registerOnSharedPreferenceChangeListener(prefChangeListener);
+        //sharedPrefs.edit().clear().commit();
+
+        // Check for location and SMS permissions
+        PermittedTask scanPermissionsTask = new PermittedTask(this, Manifest.permission.ACCESS_FINE_LOCATION) {
+            @Override
+            protected void granted() {
+
+                presenterMain.onPermissionsGranted();
+            }
+        };
+        scanPermissionsTask.run();
     }
 
     @Override
+    public void initBroadcastReceiver() {
+        IntentFilter filter = new IntentFilter();
+        // Set filter by Class name
+        filter.addAction(getClass().getSimpleName());
+        //filter.addAction(PREF_ACTIVITY);
+        mainBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent != null) {
+                    presenterMain.onBroadcastReceive(intent);
+                }
+            }
+        };
+        registerReceiver(mainBroadcastReceiver, filter);
+        // Set visibility and onclick method of buttons
+        buttonsSetOnClickListener();
+    }
+/*
+    private void loadFragment(Fragment fragment) {
+        // create a FragmentManager
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        // Replace the contents of the container with the new fragment
+        ft.replace(R.id.main_placeholder, fragment);
+        // or ft.add(R.id.your_placeholder, new FooFragment());
+        ft.commit();
+    } */
+
+    // Set date on main activity
+    @Override
+    public void setViewDate(String date) {
+        ((TextView)findViewById(R.id.tv_date)).setText(date);
+    }
+
+    // Fill In Permits User Made List
+    @Override
+    public void fillInRecordsList(ArrayList<Map<String, String>> data) {
+
+        int[] to = { R.id.li_rec_time, R.id.li_rec_job, R.id.li_rec_name, R.id.li_rec_comment };
+
+        SimpleAdapter adapter = new SimpleAdapter(this, data, R.layout.main_list_item_1, FROM, to);
+        setAdapterAndItemClickListener(adapter, R.id.lv_records_list);
+    }
+
+    private void setAdapterAndItemClickListener(SimpleAdapter adapter, int lv_id) {
+        ListView lv = findViewById(lv_id);
+        lv.setAdapter(adapter);
+        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+
+                presenterMain.onMainListViewItemClick( position, lv_id, R.id.lv_records_list );
+            }
+        });
+    }
+
+    private void buttonsSetOnClickListener() {
+
+        // show previous day record
+        bt_prev_day.setOnClickListener(v -> {
+            presenterMain.onButtonPreviousDayClick();
+        });
+
+        // show next day record
+        bt_next_day.setOnClickListener(v -> {
+            presenterMain.onButtonNextDayClick();
+        });
+
+        // add a record
+        bt_add_rec.setOnClickListener(v -> {
+            presenterMain.onButtonAddRecordClick();
+        });
+
+        // add a client
+        bt_add_client.setOnClickListener(v -> {
+            presenterMain.onButtonAddClientClick();
+        });
+
+        // Exit a programm
+        bt_exit.setOnClickListener(v -> {
+            presenterMain.onButtonExitClick();
+        });
+
+        // Show all clients
+        bt_show_clients.setOnClickListener(v -> {
+            presenterMain.onButtonShowClientsClick();
+        });
+    }
+
+    @Override
+    public void setViewButtonsFieldsVisibility (String permit_code) {
+        // Check for if a new permit
+        switch (permit_code) {
+            case ADD_CODE:
+
+                bt_next_day.setVisibility(View.GONE);
+                bt_add_rec.setVisibility(View.GONE);
+                bt_add_client.setVisibility(View.VISIBLE);
+                bt_show_clients.setVisibility(View.INVISIBLE);
+                bt_exit.setVisibility(View.INVISIBLE);
+                break;
+
+            case CHANGE_CODE:
+
+                bt_next_day.setVisibility(View.GONE);
+                bt_add_rec.setVisibility(View.GONE);
+                bt_add_client.setVisibility(View.VISIBLE);
+                bt_show_clients.setVisibility(View.INVISIBLE);
+                bt_exit.setVisibility(View.INVISIBLE);
+                break;
+
+            case EMPTY_STORAGE_STATE:
+            case DATA_IS_READY:
+            case DATA_WAS_NOT_CHANGED:
+            case DATA_WAS_SAVED:
+            case DATA_WAS_DELETED:
+            default:
+                bt_next_day.setVisibility(View.VISIBLE);
+                bt_add_rec.setVisibility(View.VISIBLE);
+                bt_add_client.setVisibility(View.VISIBLE);
+                bt_show_clients.setVisibility(View.VISIBLE);
+                bt_exit.setVisibility(View.VISIBLE);
+                break;
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.mymenu, menu);
+        Log.d(LOG_TAG, "onCreateOptionsMenu: "+super.onCreateOptionsMenu(menu));
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu (Menu menu) {
+
+        /*String admin = getResources().getStringArray(R.array.mode_user_type_values)[2];
+        String dispatcher = getResources().getStringArray(R.array.mode_user_type_values)[1];
+        boolean is_admin = admin.equals(getViewModeUser());
+        boolean is_disp = dispatcher.equals(getViewModeUser());
+        boolean cond = is_admin || is_disp;
+        // allow additional options of Menu
+        menu.findItem(R.id.serv_config_item).setEnabled(cond);
+        menu.findItem(R.id.show_archive).setEnabled(cond);
+        menu.findItem(R.id.clear_id_counter).setEnabled(cond);
+        menu.findItem(R.id.delete_all_permits).setEnabled(cond); */
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+
+            case R.id.set_item:
+                startActivity(new Intent(this, PrefActivity.class));
+                break;
+
+            case R.id.serv_config_item:
+                presenterMain.onChangeServerPreferences(getMaxRecordsNumber());
+                break;
+
+            case R.id.show_archive:
+                presenterMain.onShowArchiveClick();
+                break;
+
+            case R.id.clear_id_counter:
+                presenterMain.onClearIdCounterClick();
+                break;
+
+            case R.id.version:
+                Toast.makeText(this, getResources().getString(R.string.version), Toast.LENGTH_LONG).show();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void refreshMainStatus(String status) {
+        ((TextView)findViewById(R.id.tv_main_state)).setText(status);
+    }
+
+    @Override
+    public void showToast(String status) {
+        Toast.makeText(this, status, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public String getMaxRecordsNumber(){
+        return sharedPrefs.getString(RECORDS_MAX_NUMBER, DEFAULT_MAX_RECORDS);
+    }
+
+    /*@Override
     public void setViewPermitBlockParams( PermitBlock state ) {
 
         LinearLayout ll_permit_block = findViewById(R.id.ll_permit_block);
@@ -103,9 +324,9 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
 
         ll_permit_block.setLayoutParams(permit_params);
         ll_main_block.setLayoutParams(main_params);
-    }
+    } */
 
-    @Override
+    /*@Override
     public void setViewUserMadeBlockVisibility( boolean dispatcher_on ) {
         LinearLayout ll_permits_user_made_block = findViewById(R.id.ll_permits_user_made_block);
         if (dispatcher_on) {
@@ -115,29 +336,16 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
             ll_permits_user_made_block.setVisibility(View.VISIBLE);
             ((TextView)findViewById(R.id.tv_permits_awaiting)).setText(getResources().getString(R.string.tv_permits_awaiting));
         }
-    }
+    } */
 
-    private void initSharedPreferences() {
-        sharedPrefs = getSharedPreferences(PREF_ACTIVITY, MODE_PRIVATE);
 
-        prefChangeListener = (sharedPreferences, key) -> {
-            Log.d(LOG_TAG, "Main - prefChangeListener triggered on: " +key);
+    /*@Override
+    public String getViewModeUser(){
+        //return sharedPrefs.getString(MODE_USER, getDispatcherDefault());
+        //return sharedPrefs.getString(MODE_USER, getDepartmentEntriesArray()[0]);
+    } */
 
-            presenterMain.onChangeSharedPrefs( key );
-        };
-        sharedPrefs.registerOnSharedPreferenceChangeListener(prefChangeListener);
-        //sharedPrefs.edit().clear().commit();
-
-        // Check for location and SMS permissions
-        PermittedTask scanPermissionsTask = new PermittedTask(this, Manifest.permission.ACCESS_FINE_LOCATION) {
-            @Override
-            protected void granted() {
-
-                presenterMain.onPermissionsGranted( getDepartmentEntriesArray() );
-            }
-        };
-        scanPermissionsTask.run();
-    }
+    /*
 
     @Override
     public String getViewDepartmentUser(){
@@ -155,78 +363,18 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
     }
 
     @Override
-    public String getViewModeUser(){
-        //return sharedPrefs.getString(MODE_USER, getDispatcherDefault());
-        return sharedPrefs.getString(MODE_USER, getDepartmentEntriesArray()[0]);
-    }
-
-    @Override
     public String getDispatcherDefault(){
         return  getResources().getStringArray(R.array.mode_user_type_values)[1];
     }
-
-    @Override
-    public String getMaxRecordsNumber(){
-        return sharedPrefs.getString(RECORDS_MAX_NUMBER, DEFAULT_MAX_RECORDS);
-    }
+    */
 
     /*
     public String getAdminPass(){
         return sharedPrefs.getString(ADMIN_PASS, null);
     } */
 
-    @Override
-    public void setViewDepartmentUser(String department_user) {
-        ((TextView)findViewById(R.id.tv_department_user)).setText(department_user);
-    }
 
-    private void initBroadcastReceiver() {
-        IntentFilter filter = new IntentFilter();
-        // Set filter by Class name
-        filter.addAction(getClass().getSimpleName());
-        mainBroadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent != null) {
-                    presenterMain.onBroadcastReceive(intent);
-                }
-            }
-        };
-        registerReceiver(mainBroadcastReceiver, filter);
-        // Set visibility and onclick method of buttons
-        buttonsSetOnClickListener();
-    }
-
-    // Fill In Permits User Made List
-    public void fillInPermitsUserMadeList(ArrayList<Map<String, String>> data) {
-
-        int[] to = { R.id.li_number, R.id.li_place, R.id.li_date_reg, R.id.li_approved };
-
-        SimpleAdapter adapter = new SimpleAdapter(this, data, R.layout.main_list_item_1, FROM, to);
-        setAdapterAndItemClickListener(adapter, R.id.lv_permits_user_made);
-    }
-
-    // Fill In Permits Awaiting List
-    public void fillInPermitsAwaitingList(ArrayList<Map<String, String>> data) {
-
-        int[] to = { R.id.li_number2, R.id.li_depart2, R.id.li_place2, R.id.li_date_req2 };
-
-        SimpleAdapter adapter = new SimpleAdapter(this, data, R.layout.main_list_item_2, FROM, to);
-        setAdapterAndItemClickListener(adapter, R.id.lv_permits_awaiting);
-    }
-
-    private void setAdapterAndItemClickListener(SimpleAdapter adapter, int lv_id) {
-        ListView lv = findViewById(lv_id);
-        lv.setAdapter(adapter);
-        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-
-                presenterMain.onMainListViewItemClick( position, lv_id, R.id.lv_permits_user_made );
-            }
-        });
-    }
-
+    /*
     @Override
     public void setDepartmentBlockVisible () {
 
@@ -259,172 +407,17 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
         LinearLayout ll_deps_approve = findViewById(R.id.ll_deps_approve);
         ll_deps_approve.setVisibility(state);
     }
+    */
 
-    private void buttonsSetOnClickListener() {
-        // Fill out a work permit form
-        bt_fill_permit.setOnClickListener(v -> {
-            if (!getViewModeUser().equals(getDispatcherDefault())) {
-                presenterMain.onButtonNewClick();
-            }
-        });
-
-        // Fill out a work permit form
-        bt_check_request.setOnClickListener(v -> {
-            presenterMain.onButtonCheckClick();
-        });
-
-        // Show or put the communication lines on the map
-        bt_put_show_comm.setOnClickListener(v -> {
-            //Start MapsActivity
-            presenterMain.onButtonShowMapClick( this );
-        });
-
-        // Edit required departments
-        bt_deps_choose.setOnClickListener(v -> {
-            // Check if Place and Date data are put in
-            if (checkCorrectInputPlaceDate()) {
-
-                presenterMain.onButtonDepsChooseClick(bt_deps_choose.getText().toString(), getResources().getString(R.string.bt_deps_choose_start),
-                        et_permit_place.getText().toString(), et_permit_date_start.getText().toString(), et_permit_date_end.getText().toString(),
-                        et_permit_comment.getText().toString());
-            }
-        });
-
-        // Delete permit
-        bt_delete.setOnClickListener(v -> {
-            // Delete Depline Data Item
-            presenterMain.onButtonDeleteClick();
-            setDepartmentBlockInvisible ();
-        });
-
-        // Save the changes and exit
-        bt_permit_exit.setOnClickListener(v -> {
-            // Check if Lines of a new permit are put in
-            presenterMain.onButtonExitClick();
-        });
-    }
-
+    /*
     @Override
     public void setPermitIdTextView( String id ) {
         //put in Department  and ID
         TextView tv_permit_id = findViewById(R.id.tv_permit_id);
         tv_permit_id.setText(id);
-    }
+    } */
 
-    @Override
-    public void setPlaceDateComment (String place, String date_start, String date_end, String comment ) {
-
-        et_permit_place.setText(place);
-        et_permit_date_start.setText(date_start);
-        et_permit_date_end.setText(date_end);
-        et_permit_comment.setText(comment);
-    }
-
-    @Override
-    public void setViewButtonsFieldsVisibility (String permit_code) {
-        // Check for if a new permit
-        switch (permit_code) {
-            case NEW_PERMIT_CODE:
-
-                bt_fill_permit.setVisibility(View.GONE);
-                bt_check_request.setVisibility(View.GONE);
-
-                bt_deps_choose.setVisibility(View.VISIBLE);
-                bt_put_show_comm.setVisibility(View.INVISIBLE);
-                bt_delete.setVisibility(View.VISIBLE);
-                bt_permit_exit.setVisibility(View.INVISIBLE);
-                break;
-
-            case FILLED_PERMIT_CODE:
-
-                bt_fill_permit.setVisibility(View.GONE);
-                bt_check_request.setVisibility(View.GONE);
-
-                bt_deps_choose.setVisibility(View.GONE);
-                bt_put_show_comm.setVisibility(View.VISIBLE);
-                bt_delete.setVisibility(View.VISIBLE);
-                bt_permit_exit.setVisibility(View.INVISIBLE);
-                break;
-
-
-            case EDIT_MASTER_PERMIT_CODE:
-
-                bt_fill_permit.setVisibility(View.GONE);
-                bt_check_request.setVisibility(View.GONE);
-
-                bt_deps_choose.setVisibility(View.GONE);
-                bt_put_show_comm.setVisibility(View.VISIBLE);
-                bt_delete.setVisibility(View.VISIBLE);
-                bt_permit_exit.setVisibility(View.VISIBLE);
-                break;
-
-            case CHANGE_PERMIT_CODE:
-
-                bt_fill_permit.setVisibility(View.GONE);
-                bt_check_request.setVisibility(View.GONE);
-
-                bt_deps_choose.setVisibility(View.GONE);
-                bt_put_show_comm.setVisibility(View.VISIBLE);
-                bt_delete.setVisibility(View.INVISIBLE);
-                bt_permit_exit.setVisibility(View.VISIBLE);
-                break;
-            case SHOW_PERMIT_CODE:
-
-                bt_fill_permit.setVisibility(View.GONE);
-                bt_check_request.setVisibility(View.GONE);
-
-                bt_deps_choose.setVisibility(View.GONE);
-                bt_put_show_comm.setVisibility(View.VISIBLE);
-                bt_delete.setVisibility(View.INVISIBLE);
-                bt_permit_exit.setVisibility(View.VISIBLE);
-                break;
-
-            case NET_ERROR_STATE:
-            case URL_WAS_NOT_FOUND:
-                bt_fill_permit.setVisibility(View.GONE);
-                bt_check_request.setVisibility(View.GONE);
-
-                bt_deps_choose.setVisibility(View.GONE);
-                bt_put_show_comm.setVisibility(View.INVISIBLE);
-                bt_delete.setVisibility(View.INVISIBLE);
-                bt_permit_exit.setVisibility(View.INVISIBLE);
-                break;
-
-            case EMPTY_STORAGE_STATE:
-            case DATA_IS_READY:
-            case DATA_WAS_NOT_CHANGED:
-            case DATA_WAS_SAVED:
-            case DATA_WAS_DELETED:
-            default:
-                bt_fill_permit.setVisibility(View.VISIBLE);
-                bt_check_request.setVisibility(View.VISIBLE);
-
-                bt_deps_choose.setVisibility(View.GONE);
-                bt_put_show_comm.setVisibility(View.INVISIBLE);
-                bt_delete.setVisibility(View.INVISIBLE);
-                bt_permit_exit.setVisibility(View.VISIBLE);
-                break;
-        }
-    }
-
-    //Show Department Line Data from server
-    @Override
-    public void defineListOfRequiredDeps() {
-
-        ArrayAdapter<String> depart_adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_multiple_choice, getDepartmentEntriesArray());
-
-        //depart_adapter = new MyArrayAdapter(this, R.layout.custom_list, android.R.id.text2, DEPARTMENT_ARRAY);
-        lv_deps_choose.setAdapter(depart_adapter);
-        lv_deps_choose.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-
-                presenterMain.onPermitListViewItemClick(parent);
-            }
-        });
-    }
-
-    private boolean checkCorrectInputPlaceDate() {
+    /*private boolean checkCorrectInputPlaceDate() {
         final String FILL_IN_FIELDS ="Необходмо ";
         final String REQUIRED_ID_PLACE_DATE = "заполнить поля: '" + getResources().getString(R.string.et_place)
                 + "', '" + getResources().getString(R.string.et_date_start);
@@ -435,8 +428,9 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
             return false;
         } else return true;
     }
+    */
 
-    @Override
+    /*@Override
     public void setPermitAdapterAndItemClickListener( ArrayList<Map<String, String>> data ) {
 
         int[] to = { R.id.li_permit_depart, R.id.li_permit_required, R.id.li_permit_commun, R.id.li_permit_date_approve };
@@ -444,79 +438,13 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
 
         ListView lv = findViewById(R.id.lv_deps_approve);
         lv.setAdapter(adapter);
-        /* lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
                 //int lv_pos = ((ListView) parent).getCheckedItemPosition();
             }
-        }); */
-    }
-
-   @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.mymenu, menu);
-        Log.d(LOG_TAG, "onCreateOptionsMenu: "+super.onCreateOptionsMenu(menu));
-        return true;
-    }
-
-    @Override
-    public boolean onPrepareOptionsMenu (Menu menu) {
-
-        String admin = getResources().getStringArray(R.array.mode_user_type_values)[2];
-        String dispatcher = getResources().getStringArray(R.array.mode_user_type_values)[1];
-        boolean is_admin = admin.equals(getViewModeUser());
-        boolean is_disp = dispatcher.equals(getViewModeUser());
-        boolean cond = is_admin || is_disp;
-        // allow additional options of Menu
-        menu.findItem(R.id.serv_config_item).setEnabled(cond);
-        menu.findItem(R.id.show_archive).setEnabled(cond);
-        menu.findItem(R.id.clear_id_counter).setEnabled(cond);
-        menu.findItem(R.id.delete_all_permits).setEnabled(cond);
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        switch (item.getItemId()) {
-
-            case R.id.set_item:
-                startActivity(new Intent(this, PrefActivity.class));
-                break;
-
-            case R.id.serv_config_item:
-                presenterMain.onChangeServerPreferences(getMaxRecordsNumber());
-                break;
-
-            case R.id.show_archive:
-                presenterMain.onShowArchiveClick();
-                break;
-
-            case R.id.clear_id_counter:
-                presenterMain.onClearIdCounterClick();
-                break;
-
-            case R.id.delete_all_permits:
-                presenterMain.onDeleteAllPermitsClick();
-                break;
-
-            case R.id.version:
-                Toast.makeText(this, getResources().getString(R.string.version), Toast.LENGTH_LONG).show();
-                break;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void refreshMainStatus(String status) {
-        ((TextView)findViewById(R.id.tv_main_state)).setText(status);
-    }
-
-    @Override
-    public void showToast(String status) {
-        Toast.makeText(this, status, Toast.LENGTH_LONG).show();
-    }
+        });
+    }*/
 
     @Override
     protected void onResume() {
@@ -546,15 +474,3 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
             }); */
 
 //private String code_after_map = DATA_WAS_NOT_CHANGED;
-
-    /* @Override
-    public void runMapsActivity( Intent intent ) {
-
-        String dep_line_data_json = intent.getStringExtra(DEP_LINE_DATA);
-        String permit_code = intent.getStringExtra(DATA_TYPE);
-
-        Intent maps_activity = new Intent(this, MapsActivity.class);
-        maps_activity.putExtra(DEP_LINE_DATA, dep_line_data_json);
-        maps_activity.putExtra(DATA_TYPE, permit_code);
-        activityResultLaunch.launch(maps_activity);
-    } */

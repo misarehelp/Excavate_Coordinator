@@ -1,4 +1,4 @@
-package ru.volganap.nikolay.excavate_coordinator;
+package ru.volganap.nikolay.haircut_schedule;
 
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;

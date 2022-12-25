@@ -1,4 +1,4 @@
-package ru.volganap.nikolay.excavate_coordinator;
+package ru.volganap.nikolay.haircut_schedule;
 
 import android.content.Intent;
 import android.content.Context;
@@ -17,12 +17,12 @@ public class OkHttpRequest implements KM_Constants, Enums{
     //int attempt = 0;
     //private static Context context;
 
-    public void serverGetback(Context context, String command, String depID, String data) {
+    public void serverGetback(Context context, String command, String dateID, String data) {
         OkHttpClient client = new OkHttpClient();
         //Log.d(LOG_TAG, "OkHttpRequest. Command is:" + command + ";  Data: " + data);
         RequestBody formBody = new FormBody.Builder()
                 .add("command", command)
-                .add("depID", depID)
+                .add("dateID", dateID)
                 .add("data", data)
                 .build();
         Request request = new Request.Builder()
@@ -43,16 +43,14 @@ public class OkHttpRequest implements KM_Constants, Enums{
                 String res = response.body().string();
                 String message = res;
 
-                if ( command.equals(SERVER_CLEAR_BUSY) ) {
-                    if (res.contains(SERVER_BASE_HAS_BEEN_RELEASED_BY)) {
-                        status = SERVER_BASE_HAS_BEEN_RELEASED_BY;
-                    }
+                if ( res.equals(DATA_WAS_SAVED )) {
+                    status = DATA_WAS_SAVED;
 
-                } else if ( res.equals(DATA_WAS_SAVED ) || (res.startsWith("[\"{")) ) {
-                    status = DATA_IS_READY;
+                } else if (res.startsWith("[\"{")) {
+                        status = DATA_IS_READY;
 
                 } else if ( command.equals(SERVER_GET_NEXT_ID) ) {
-                    status = command;
+                    status = SERVER_GET_NEXT_ID;
 
                 } else if (res.contains(SERVER_ANSWER_CONFIG)) {
                     status = SERVER_ANSWER_CONFIG;
@@ -71,6 +69,7 @@ public class OkHttpRequest implements KM_Constants, Enums{
         Intent intent = new Intent();
         //intent.setAction(ACTION_FROM_OKHTTP);
         String action = context.getClass().getSimpleName();
+        //String action = PREF_ACTIVITY;
         Log.d(LOG_TAG, "OkHttpRequest: callbackSender, Action is: " + action);
         intent.setAction(action);
         intent.putExtra(SENDER, status);

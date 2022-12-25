@@ -1,10 +1,9 @@
-package ru.volganap.nikolay.excavate_coordinator;
+package ru.volganap.nikolay.haircut_schedule;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.*;
 import android.os.Bundle;
-import android.view.ViewDebug;
 import android.widget.Toast;
 
 public class PrefActivity extends PreferenceActivity implements KM_Constants {
@@ -77,9 +76,9 @@ public class PrefActivity extends PreferenceActivity implements KM_Constants {
         private void initPrefSetup() {
             //initCheckBoxPreference(BROWSER_MODE);
             initListPreference(DEPARTMENT_USER, DEFAULT_DEPARTMENT_POSITION);
-            initListPreference(MAP_TYPE, MAP_TYPE_DEFAULT_POSITION);
+            //initListPreference(MAP_TYPE, MAP_TYPE_DEFAULT_POSITION);
             initListPreference(MODE_USER, MODE_USER_DEFAULT_POSITION);
-            updateEditPreference(MAP_SCALE);
+            //updateEditPreference(MAP_SCALE);
             updateEditPreference(RECORDS_MAX_NUMBER);
             updateEditPreference(ADMIN_PASS);
         }
@@ -95,12 +94,12 @@ public class PrefActivity extends PreferenceActivity implements KM_Constants {
             ListPreference lp = (ListPreference) findPreference(key);
             if (lp.getValue() == null) {
                 switch (key) {
-                    case DEPARTMENT_USER:
+                    /*case DEPARTMENT_USER:
                         lp.setValue(getResources().getStringArray(R.array.department_values)[default_pos]);
                         break;
-                    case MAP_TYPE:
-                        lp.setValue(getResources().getStringArray(R.array.map_type_values)[default_pos]);
-                        break;
+                    //case MAP_TYPE:
+                        //lp.setValue(getResources().getStringArray(R.array.map_type_values)[default_pos]);
+                        break; */
                     case MODE_USER:
                         lp.setValue(getResources().getStringArray(R.array.mode_user_type_values)[default_pos]);
                         break;
@@ -118,14 +117,14 @@ public class PrefActivity extends PreferenceActivity implements KM_Constants {
                 case MODE_USER:
                     updateUserListPreference(key);
                     break;
-                case DEPARTMENT_USER:
+                /* case DEPARTMENT_USER:
                 case MAP_TYPE:
                     updateUserListPreference(key);
                     break;
                 case RECORDS_MAX_NUMBER:
                 case MAP_SCALE:
                     updateEditPreference(key);
-                    break;
+                    break; */
                 case ADMIN_PASS:
                         updateEditPreference(key);
                     break;
@@ -183,11 +182,11 @@ public class PrefActivity extends PreferenceActivity implements KM_Constants {
                 }
             }
 
-            if (key.equals(MAP_TYPE)) {
+            /* if (key.equals(MAP_TYPE)) {
                 storeSharedPreferenceValue(key, value);
             } else {
                 storeSharedPreferenceValue(key, entry.toString());
-            }
+            } */
             preference.setSummary(entry);
         }
 

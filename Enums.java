@@ -1,4 +1,4 @@
-package ru.volganap.nikolay.excavate_coordinator;
+package ru.volganap.nikolay.haircut_schedule;
 
 public interface Enums {
     enum Approvement {
