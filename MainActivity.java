@@ -56,13 +56,9 @@ import java.util.Map;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
-public class MainActivity extends AppCompatActivity implements KM_Constants{
+public class MainActivity extends AppCompatActivity implements KM_Constants, Contract.View{
     public static final String SERVER_GET_ALL ="server_get_all";
     public static final String SERVER_PUT_ALL ="server_put_all";
-    public static final String SERVER_GET_BY_DEPART ="server_get_by_depart";
-    public static final String SERVER_GET_BY_ID ="server_get_by_id";
-    public static final String SERVER_NEW_BY_ID ="server_new_by_id";
-    public static final String SERVER_CHANGE_BY_ID ="server_change_by_id";
     final String FILL_IN_FIELDS ="Необходмо ";
     final String COMMUNICATIONS_ARE_DEFINED ="Коммуникации внесены в базу данных наряда, сохраните изменения.";
 
@@ -84,6 +80,7 @@ public class MainActivity extends AppCompatActivity implements KM_Constants{
     private String department_user;
     private String[] department_array;
     boolean [] required_array;
+    Contract.Presenter presenter;
 
     // a change for a depricated onActivityResult()
     private ActivityResultLauncher<Intent> activityResultLaunch = registerForActivityResult(
@@ -113,14 +110,8 @@ public class MainActivity extends AppCompatActivity implements KM_Constants{
                         refreshMainStatus( code_after_map );
                     }
                 }
-                /* public void onActivityResult(ActivityResult result) {
-                    if (result.getResultCode() == PERMIT_ACTIVITY_REQUEST_CODE) {
-                        refreshMainStatus(DATA_IS_READY);
-                        Intent intent = result.getData();
-                        handleActivityResult(intent);
-                    }
-                } */
             });
+
     //private ListView lv_permits_user_made, lv_permits_awaiting;
     private ArrayList<DepLinesData> dep_lines_data_array  = new ArrayList<>();
     private DepLinesData dep_line_data;
@@ -134,12 +125,15 @@ public class MainActivity extends AppCompatActivity implements KM_Constants{
         setContentView(R.layout.activity_main);
         // Init Main activity layout
         initMainViewLayout();
+        // instantiating object of Presenter Interface
+        presenter = new Presenter(this, new Model());
+        presenter.onChangePermitBlockViewParams();
 
         // Init Settings Preferences
         initSharedPreferences();
 
         // set Departtment User;
-        setDepartmentUser();
+        //setDepartmentUser();
 
         required_array  = new boolean[department_array.length];
 
@@ -147,26 +141,26 @@ public class MainActivity extends AppCompatActivity implements KM_Constants{
         initBroadcastReceiver();
     }
 
-    private void setDepartmentUser() {
-        department_array = getResources().getStringArray(R.array.department_values);
-        department_user = sharedPrefs.getString(DEPARTMENT_USER, department_array[0]);
-        tv_department_user.setText(department_user);
-    }
-
     private void initMainViewLayout() {
         tv_main_state = findViewById(R.id.tv_main_state);
         tv_department_user = findViewById(R.id.tv_department_user);
 
-        ll_permit_block = findViewById(R.id.ll_permit_block);
-        ViewGroup.LayoutParams params = ll_permit_block.getLayoutParams();
-        params.height = 0;
-        ll_permit_block.setLayoutParams(params);
-
-        //tv_permits_user_made = findViewById(R.id.tv_permits_user_made);
-        //tv_permits_awaiting = findViewById(R.id.tv_permits_awaiting);
         bt_fill_permit = findViewById(R.id.bt_fill_permit);
         bt_check_request = findViewById(R.id.bt_check_request);
+
+        ll_permit_block = findViewById(R.id.ll_permit_block);
+
         setButtonsInterface(URL_WAS_NOT_FOUND);
+    }
+
+    @Override
+    public ViewGroup.LayoutParams getViewPermitBlockParams() {
+        return ll_permit_block.getLayoutParams();
+    }
+
+    @Override
+    public void setViewPermitBlockParams(ViewGroup.LayoutParams params) {
+        ll_permit_block.setLayoutParams(params);
     }
 
     private void initSharedPreferences() {
@@ -174,7 +168,9 @@ public class MainActivity extends AppCompatActivity implements KM_Constants{
         prefChangeListener = (sharedPreferences, key) -> {
             Log.d(LOG_TAG, "Main - prefChangeListener triggered on: " +key);
             if (key.equals(DEPARTMENT_USER)) {
-                setDepartmentUser();
+
+                presenter.onChangeSharedPrefs();
+                //setDepartmentUser();
                 bt_check_request.performClick();
             }
             refreshMainStatus("");
@@ -191,6 +187,24 @@ public class MainActivity extends AppCompatActivity implements KM_Constants{
         };
         scanPermissionsTask.run();
     }
+
+    @Override
+    public String getViewDepartmentUser(){
+        department_array = getResources().getStringArray(R.array.department_values);
+        String department_user = sharedPrefs.getString(DEPARTMENT_USER, department_array[0]);
+        return department_user;
+    }
+
+    @Override
+    public void setViewDepartmentUser(String department_user) {
+        tv_department_user.setText(department_user);
+    }
+
+    /* public void setDepartmentUser() {
+        department_array = getResources().getStringArray(R.array.department_values);
+        department_user = sharedPrefs.getString(DEPARTMENT_USER, department_array[0]);
+        tv_department_user.setText(department_user);
+    } */
 
     private void initBroadcastReceiver() {
         IntentFilter filter = new IntentFilter();
@@ -369,8 +383,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants{
                 } else {
                     permit_code = SHOW_PERMIT_CODE;
                 }
-
-                //launchPermitActivityForResult(dep_line_data, permit_code);
                 runPermitBlock(permit_code);
             }
         });
@@ -379,7 +391,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants{
     private void buttonsMainSetOnClickListener() {
         // Fill out a work permit form
         bt_fill_permit.setOnClickListener(v -> {
-            //launchPermitActivityForResult(getDepLinesDataItem(), NEW_PERMIT_CODE);
             dep_line_data = getDepLinesDataItem();
             runPermitBlock(NEW_PERMIT_CODE);
         });
@@ -408,16 +419,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants{
         );
         return dep_line_data;
     }
-
-    /*private void launchPermitActivityForResult(DepLinesData dep_line_data_orig, String permit_code) {
-        // a change for a depricated onActivityResult()
-        String dep_line_data_json = new Gson().toJson(dep_line_data_orig);
-        Intent permit_activity = new Intent(this, PermitActivity.class);
-        permit_activity.putExtra(DEP_LINE_DATA, dep_line_data_json);
-        permit_activity.putExtra(DATA_TYPE, permit_code);
-        //startActivity(permit_activity);
-        activityResultLaunch.launch(permit_activity);
-    } */
 
     // ************* Start Permit Block ******************************
     private void runPermitBlock(String permit_code) {
@@ -760,229 +761,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants{
         unregisterReceiver(mainBroadcastReceiver);
         Log.d(LOG_TAG, "MainActivity: onDestroy ");
         super.onDestroy();
+        presenter.onDestroy();
     }
 }
-
-        /* String[] from = {
-                getResources().getString(R.string.lv_permit_number),
-                getResources().getString(R.string.lv_place),
-                getResources().getString(R.string.lv_date_start),
-                getResources().getString(R.string.lv_date_reg),
-                getResources().getString(R.string.lv_approved)
-        }; */
-
-        /*try {
-            //mqttHelper.mqttAndroidClient.unsubscribe(PARENT_PHONE);
-        } catch (MqttException ex) {
-            System.err.println("Exception whilst UNsubscribing");
-            ex.printStackTrace();
-        } */
-
-    /* protected void sendSMSMessage (String phoneNo, String message) {
-        try {
-            SmsManager smsManager = SmsManager.getDefault();
-            smsManager.sendTextMessage(phoneNo, null, message, null, null);
-            Toast.makeText(getApplicationContext(), "SMS sent.", Toast.LENGTH_LONG).show();
-            Log.d(LOG_TAG, "MainActivity: SMS sent to number: " + phoneNo + " with message: " + message);
-        } catch (Exception e) {
-            Toast.makeText(getApplicationContext(),"Ошибка отправки запроса через СМС", Toast.LENGTH_LONG).show();
-            e.printStackTrace();
-            Log.d(LOG_TAG, "MainActivity: SMS failed. SMS Exception: " + e.toString());
-        }
-    } */
-
- /*    // Send a command to the Kid
-    private void sendCommandToKid(String rq_command) {
-        String kid_phone = sharedPrefs.getString(KID_PHONE, "" );
-        if (kid_phone == null) {
-            Toast.makeText(getApplicationContext(), "Сначала выберите в настройках номер телефона ребенка", Toast.LENGTH_LONG).show();
-            return;
-        }
-        String parent_phone = sharedPrefs.getString(PARENT_PHONE, "" );
-        String rq_message = COMMAND_BASE + STA_SIGN + rq_command + STA_SIGN + parent_phone + STA_SIGN + kid_phone;
-        String status_mes = DATA_REQUEST_PROCESSING + ". Команда: " + rq_message;
-        refreshStatus(status_mes);
-        String rq_mode = sharedPrefs.getString(PREF_REQUEST, "");
-        switch (rq_mode) {
-            case REQUEST_NET:      // MQTT PUBLISH a message
-                try {
-                    MqttMessage message = new MqttMessage();
-                    message.setPayload(rq_message.getBytes());
-                    mqttHelper.mqttAndroidClient.publish(KID_PHONE, message);
-                } catch (MqttException e) {
-                    System.err.println("Error Publishing: " + e.getMessage());
-                        Log.d(LOG_TAG,"Main - MQTT - onError: " + rq_command);
-                    refreshStatus(NE_REQ_NOT_SENT);
-                    e.printStackTrace();
-                }
-                break;
-            case REQUEST_SERVER:    // SMS PUBLISH a message
-            case REQUEST_SMS:
-                 sendSMSMessage(kid_phone, rq_message);
-
-                 int server_delay = Integer.parseInt(sharedPrefs.getString(SERVER_DELAY_TITLE, DEFAULT_SERVER_DATA_DELAY));
-                 if (rq_mode.equals(REQUEST_SERVER)) {   // get the location from server in N seconds
-                    Handler handler = new Handler();
-                    handler.postDelayed(()-> getBackWithServer(SERVER_SINGLE_REQUEST, ""), server_delay * 1000);                 }
-
-                break;
-        }
-    }*/
-
-//Perform actions after reply came from Kid or Server
- /*   public void replyRecieved(String location_message){
-        Log.d(LOG_TAG, "MainActivity: replyRecieved is worked, position is:  " + location_message);
-
-        String [] complex_message = location_message.split(STA_SIGN);
-        String status_state = complex_message[0];
-        String source = SOURCE_SERVER;
-        String loc_array []={""};
-        showListLocations(null);
-        switch (status_state) {
-            // Data from Server
-            case OK_STATE_PARENT:
-                //Multiple records
-                if (complex_message[1].startsWith("[")) {
-                    GsonBuilder builder = new GsonBuilder();
-                    Gson gson = builder.create();
-                    loc_array = gson.fromJson(complex_message[1], String[].class);
-                // Single record
-                } else {
-                    source = ", источник: " + complex_message[complex_message.length-1];
-                    loc_array[0] = complex_message[1];
-                }
-                showListLocations(loc_array);
-                break;
-            case EMPTY_STORAGE_STATE:
-            case NET_ERROR_STATE:
-                refreshStatus(status_state + source);
-                break;
-            case CONFIG_SERVER_STATE:
-                refreshStatus(status_state + complex_message[1] + source);
-                break;
-            //Data from Kid
-            case OK_STATE_KID:
-                source = ", источник: " + complex_message[complex_message.length-1];
-                refreshStatus(DATA_IS_READY + source);
-                loc_array[0] = complex_message[1];
-                showListLocations(loc_array);
-                break;
-            case NET_ERROR_GOT_LOCATION_STATE:
-                source = ", источник: " + complex_message[complex_message.length-1];
-                refreshStatus(DATA_IS_READY + NET_ERROR_STATE + source);
-                loc_array[0] = complex_message[1];
-                showListLocations(loc_array);
-                break;
-            case CONFIRM_CONNECTION:
-                source = ", источник: " + complex_message[complex_message.length-1] + complex_message[complex_message.length-2];
-                refreshStatus(status_state + source);
-                break;
-            case NO_CHANGE_STATE:
-            case NO_LOCATION_FOUND_STATE:
-            case LOCATION_IS_TURNED_OFF:
-            default:
-                source = ", источник: " + complex_message[complex_message.length-1];
-                refreshStatus(status_state + source);
-                break;
-        }
-    } */
-
-    /*public void showListLocations(String [] loc_array) {
-        ListView lvMain = findViewById(R.id.listView);
-        if (loc_array == null) {
-            lvMain.setVisibility(View.INVISIBLE);
-            return;
-        } else {
-            lvMain.setVisibility(View.VISIBLE);
-        }
-        String[] from = { ATTRIBUTE_NAME_LAT, ATTRIBUTE_NAME_LONG, ATTRIBUTE_NAME_DATE,
-                ATTRIBUTE_NAME_ACCU, ATTRIBUTE_NAME_BATT };
-        int[] to = { R.id.list_lat, R.id.list_long, R.id.list_date, R.id.list_accu, R.id.list_batt };
-        ArrayList<String []> record = new ArrayList<>();
-        int loc_array_length = loc_array.length;
-        for(int i=0; i < loc_array_length; i++) {
-            String [] helper_mes = loc_array[i].split(REG_SIGN);
-            //Check for if the Data of chosen Kid's phone
-            record.add(helper_mes);
-        }
-
-        if (loc_array_length <2) {
-            refreshStatus(DATA_IS_READY + record.get(0)[5]);
-        } else {
-            refreshStatus(DATA_IS_READY + SOURCE_SERVER);
-        }
-
-        ArrayList<Map<String, String>> data = new ArrayList<>(loc_array_length);
-        Map<String, String> m;
-        for (int i = 0; i < loc_array_length; i++) {
-            m = new HashMap<>();
-            m.put(ATTRIBUTE_NAME_LAT, record.get(i)[0]);
-            m.put(ATTRIBUTE_NAME_LONG, record.get(i)[1]);
-            m.put(ATTRIBUTE_NAME_DATE, record.get(i)[3]);
-            m.put(ATTRIBUTE_NAME_ACCU, record.get(i)[2]);
-            m.put(ATTRIBUTE_NAME_BATT, record.get(i)[4]);
-            if (sharedPrefs.getBoolean(CHOSEN_KID_MARKERS, false)) {
-                if (sharedPrefs.getString(KID_PHONE, "").equals(record.get(i)[5])) {
-                    data.add(m);
-                }
-            } else {
-                data.add(m);
-            }
-        }
-        SimpleAdapter adapter = new SimpleAdapter(this, data, R.layout.list_item, from, to);
-        lvMain.setAdapter(adapter);
-
-        // Show markers on the map
-        if (sharedPrefs.getBoolean(BROWSER_MODE, false)) {
-            Intent maps_activity = new Intent(this, MapsActivity.class);
-            String dataAsJson = new Gson().toJson(data);
-            maps_activity.putExtra("loc_data", dataAsJson);
-            startActivity(maps_activity);
-        }
-    } */
-
-
-                        /*Handler handler = new Handler(Looper.getMainLooper());
-                        Runnable myRunnable = () -> {
-                            try {
-                                replyRecieved (loc_mes);
-                            } catch (Exception e) {
-                                Log.d(LOG_TAG, "Main: Handler: Ably_message EXCEPTION: " + e.toString());
-                            }
-                        };
-                        handler.post(myRunnable); */
-
-
-//Init MQTT;
-        /*
-
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
-import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
-
-        String id_mqtt = sharedPrefs.getString(PARENT_PHONE, "" ) + System.currentTimeMillis();;
-        Log.d(LOG_TAG,"Main: MQTT Id: " + id_mqtt);
-        mqttHelper = new MqttHelper(getApplicationContext(), PARENT_PHONE, id_mqtt);
-        mqttHelper.mqttAndroidClient.setCallback(new MqttCallbackExtended() {
-            @Override
-            public void connectComplete(boolean b, String s) {
-                Log.d(LOG_TAG,"Main: MQTT * " +"Connected: " + s);
-            }
-
-            @Override
-            public void connectionLost(Throwable throwable) {
-                Log.d(LOG_TAG,"Main: MQTT * "+"Connection lost");
-            }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
-                Log.d(LOG_TAG,"Main: MQTT: messageArrived * "+ mqttMessage.toString());
-                replyRecieved (mqttMessage.toString());
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
-
-            }
-        }); */
