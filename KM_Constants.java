@@ -2,6 +2,7 @@ package ru.volganap.nikolay.excavate_coordinator;
 
 public interface KM_Constants  {
     String LOG_TAG = "myLogs";
+    final String[] FROM = {"0", "1", "2", "3", "4"};
     String DEPARTMENT_USER = "department_user";
     String DEP_LINE_DATA = "dep_line_data";
     String DATA_TYPE = "data_type";
@@ -13,6 +14,9 @@ public interface KM_Constants  {
     String DATA_WAS_DELETED ="Текущий наряд был удален";
     String URL_WAS_NOT_FOUND = "The requested URL was not found on this server";
     String NET_ERROR_STATE = "Произошла ошибка подключения к серверу";
+
+    String SERVER_GET_ALL ="server_get_all";
+    String SERVER_PUT_ALL ="server_put_all";
     String EMPTY_STORAGE_STATE = "Нет данных на сервере";
     String REQUEST_IS_EMPTY = "request_is_empty";
     String DATA_WAS_NOT_SAVED ="data_was_not_saved";

@@ -57,8 +57,6 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
 public class MainActivity extends AppCompatActivity implements KM_Constants, Contract.View{
-    public static final String SERVER_GET_ALL ="server_get_all";
-    public static final String SERVER_PUT_ALL ="server_put_all";
     final String FILL_IN_FIELDS ="Необходмо ";
     final String COMMUNICATIONS_ARE_DEFINED ="Коммуникации внесены в базу данных наряда, сохраните изменения.";
 
@@ -77,7 +75,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
     private ListView lv_deps_choose, lv_deps_approve;
 
     private BroadcastReceiver mainBroadcastReceiver;
-    private String department_user;
     private String[] department_array;
     boolean [] required_array;
     Contract.Presenter presenter;
@@ -116,7 +113,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
     private ArrayList<DepLinesData> dep_lines_data_array  = new ArrayList<>();
     private DepLinesData dep_line_data;
     private int position_to_edit;
-    private String[] from = {"0", "1", "2", "3", "4"};
     private String code_after_map = DATA_WAS_NOT_CHANGED;
 
     @Override
@@ -126,14 +122,11 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
         // Init Main activity layout
         initMainViewLayout();
         // instantiating object of Presenter Interface
-        presenter = new Presenter(this, new Model());
-        presenter.onChangePermitBlockViewParams();
+        presenter = new Presenter(this, new ModelMain(this), new ModelPermit(this));
+        presenter.onChangePermitBlockViewParams(getViewPermitBlockParams());
 
         // Init Settings Preferences
         initSharedPreferences();
-
-        // set Departtment User;
-        //setDepartmentUser();
 
         required_array  = new boolean[department_array.length];
 
@@ -150,10 +143,9 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
 
         ll_permit_block = findViewById(R.id.ll_permit_block);
 
-        setButtonsInterface(URL_WAS_NOT_FOUND);
+        setButtonsInterface(DATA_WAS_NOT_SAVED);
     }
 
-    @Override
     public ViewGroup.LayoutParams getViewPermitBlockParams() {
         return ll_permit_block.getLayoutParams();
     }
@@ -169,9 +161,9 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
             Log.d(LOG_TAG, "Main - prefChangeListener triggered on: " +key);
             if (key.equals(DEPARTMENT_USER)) {
 
-                presenter.onChangeSharedPrefs();
-                //setDepartmentUser();
-                bt_check_request.performClick();
+                presenter.onChangeSharedPrefs(getViewDepartmentUser());
+                presenter.updateViewServerData( SERVER_GET_ALL, "", "");
+                //bt_check_request.performClick();
             }
             refreshMainStatus("");
         };
@@ -182,29 +174,22 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
             @Override
             protected void granted() {
                 //Get the permit data having been required user's approvement  from server
-                getBackWithServer(SERVER_GET_ALL, "", "");
+                //getBackWithServer(SERVER_GET_ALL, "", "");
+                presenter.updateViewServerData( SERVER_GET_ALL, "", "");
             }
         };
         scanPermissionsTask.run();
     }
 
-    @Override
     public String getViewDepartmentUser(){
         department_array = getResources().getStringArray(R.array.department_values);
-        String department_user = sharedPrefs.getString(DEPARTMENT_USER, department_array[0]);
-        return department_user;
+        return sharedPrefs.getString(DEPARTMENT_USER, department_array[0]);
     }
 
     @Override
     public void setViewDepartmentUser(String department_user) {
         tv_department_user.setText(department_user);
     }
-
-    /* public void setDepartmentUser() {
-        department_array = getResources().getStringArray(R.array.department_values);
-        department_user = sharedPrefs.getString(DEPARTMENT_USER, department_array[0]);
-        tv_department_user.setText(department_user);
-    } */
 
     private void initBroadcastReceiver() {
         IntentFilter filter = new IntentFilter();
@@ -214,32 +199,14 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (intent != null) {
-                    String sender = intent.getStringExtra(SENDER);
+
                     String message = intent.getStringExtra(MESSAGE);
-                    //String action = intent.getAction();
-                    Log.d(LOG_TAG, "Main Get back with Sender: " + sender + ", data: " + message);
-                    setButtonsInterface(message);
-                    switch (message) {
-                        case NET_ERROR_STATE:
-                        case URL_WAS_NOT_FOUND:
-                        case DATA_WAS_NOT_SAVED:
-                        case DATA_WAS_SAVED:
-                            refreshMainStatus(message);
-                            break;
-                        case EMPTY_STORAGE_STATE:
-                        case REQUEST_IS_EMPTY:
-                            refreshMainStatus(EMPTY_STORAGE_STATE);
-                            break;
-                        default:
-                            refreshMainStatus(DATA_IS_READY);
+                    Log.d(LOG_TAG, "Main Get back with Sender: "  + message);
+                    String status_message = (message.equals(REQUEST_IS_EMPTY)) ? EMPTY_STORAGE_STATE : message;
+                    setButtonsInterface(status_message);
 
-                            ArrayList<String> array_level_json = new Gson().fromJson(message, ArrayList.class);
-                            for (String item: array_level_json) {
-                                dep_lines_data_array.add(new Gson().fromJson(item, DepLinesData.class));
-                            }
-
-                            fillInPermitsUserMadeList();
-                            fillInPermitsAwaitingList();
+                    if (message.equals(DATA_IS_READY)) {
+                        presenter.onBroadcastReceive(message);
                     }
                 }
             }
@@ -250,11 +217,7 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
     }
 
     // Handle the result got from another Activity
-    private void getBackWithPermitBlock(String data_type) {
-
-        ViewGroup.LayoutParams params = ll_permit_block.getLayoutParams();
-        params.height = 0;
-        ll_permit_block.setLayoutParams(params);
+    /*private void getBackWithPermitBlock(String data_type) {
 
         Log.d(LOG_TAG, "MainActivity: getBackWithPermitBlock ");
 
@@ -273,19 +236,19 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
                 dep_lines_data_array.remove( position_to_edit);
                 break;
             // no change was made
-            case DATA_WAS_NOT_CHANGED:
-            case SHOW_PERMIT_CODE:
             default:
                 refreshMainStatus(data_type);
                 return;
         }
         //send changed data to server
         changeDataAndSendToServer();
-    }
+    } */
 
-    private void setButtonsInterface (String button_visibility) {
-        //Boolean mode = sharedPrefs.getBoolean(PREF_USER, false);
-        switch (button_visibility) {
+    public void setButtonsInterface (String status_message) {
+
+        refreshMainStatus(status_message);
+
+        switch (status_message) {
             case NET_ERROR_STATE:
             case URL_WAS_NOT_FOUND:
                 bt_fill_permit.setVisibility(View.INVISIBLE);
@@ -298,9 +261,9 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
     }
 
     // Change DepLinesData Array and send it to Server
-    private void changeDataAndSendToServer() {
+    /* private void changeDataAndSendToServer() {
 
-        ArrayList<String> dld_array_list = new ArrayList<>();
+       ArrayList<String> dld_array_list = new ArrayList<>();
         //DepLinesData item_help;
         for (DepLinesData item: dep_lines_data_array) {
             String item_json = new Gson().toJson(item);
@@ -308,69 +271,34 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
         }
 
         String dld_array_json = new Gson().toJson(dld_array_list);
-        getBackWithServer(SERVER_PUT_ALL, "", dld_array_json);
-
-        // renew the lists of permits
-        fillInPermitsUserMadeList();
-        fillInPermitsAwaitingList();
-    }
+        //getBackWithServer(SERVER_PUT_ALL, "", dld_array_json);
+    }*/
 
     // Fill In Permits User Made List
-    private void fillInPermitsUserMadeList() {
+    public void fillInPermitsUserMadeList(ArrayList<Map<String, String>> data) {
         int[] to = { R.id.li_number, R.id.li_place, R.id.li_date_start, R.id.li_date_reg, R.id.li_approved };
-        ArrayList<Map<String, String>> data = new ArrayList<>();
-        ArrayList<Integer> permit_array = new ArrayList();
-        //data = new PermitData().getUserMadeListData(to, dep_lines_data_array, department_user);
-        for (int i = 0; i < dep_lines_data_array.size(); i++) {
-            //check if user has created permits
-            if (dep_lines_data_array.get(i).getDepartMaster().equals(department_user)) {
-                Map<String, String> hashmap = new HashMap<>();
-                hashmap.put(from[0], dep_lines_data_array.get(i).getId());
-                hashmap.put(from[1], dep_lines_data_array.get(i).getPlace());
-                hashmap.put(from[2], dep_lines_data_array.get(i).getStringDateStart());
-                hashmap.put(from[3], dep_lines_data_array.get(i).getStringDateReg());
-                hashmap.put(from[4], dep_lines_data_array.get(i).getPermitApproved());
-                data.add(hashmap);
-                permit_array.add(i);
-            }
-        }
 
-        SimpleAdapter adapter = new SimpleAdapter(this, data, R.layout.main_list_item_1, from, to);
-        setAdapterAndItemClickListener(adapter, R.id.lv_permits_user_made, permit_array);
+        SimpleAdapter adapter = new SimpleAdapter(this, data, R.layout.main_list_item_1, FROM, to);
+        setAdapterAndItemClickListener(adapter, R.id.lv_permits_user_made);
     }
 
     // Fill In Permits Awaiting List
-    private void fillInPermitsAwaitingList() {
+    public void fillInPermitsAwaitingList(ArrayList<Map<String, String>> data) {
         int[] to = { R.id.li_number2, R.id.li_depart2, R.id.li_place2, R.id.li_date_start2, R.id.li_comment2 };
-        ArrayList<Map<String, String>> data = new ArrayList<>();
-        ArrayList<Integer> permit_array = new ArrayList();
 
-        for (int i = 0; i < dep_lines_data_array.size(); i++) {
-            //check if user department is required
-            if (dep_lines_data_array.get(i).getHashmapRequired().get(department_user)) {
-                Map<String, String> hashmap = new HashMap<>();
-                hashmap.put(from[0], dep_lines_data_array.get(i).getId());
-                hashmap.put(from[1], dep_lines_data_array.get(i).getDepartMaster());
-                hashmap.put(from[2], dep_lines_data_array.get(i).getPlace());
-                hashmap.put(from[3], dep_lines_data_array.get(i).getStringDateStart());
-                hashmap.put(from[4], dep_lines_data_array.get(i).getComment());
-                data.add(hashmap);
-                permit_array.add(i);
-            }
-        }
-
-        SimpleAdapter adapter = new SimpleAdapter(this, data, R.layout.main_list_item_2, from, to);
-        setAdapterAndItemClickListener(adapter, R.id.lv_permits_awaiting, permit_array);
+        SimpleAdapter adapter = new SimpleAdapter(this, data, R.layout.main_list_item_2, FROM, to);
+        setAdapterAndItemClickListener(adapter, R.id.lv_permits_awaiting);
     }
 
-    private void setAdapterAndItemClickListener(SimpleAdapter adapter, int lv_id, ArrayList<Integer> permit_array) {
+    private void setAdapterAndItemClickListener(SimpleAdapter adapter, int lv_id) {
         ListView lv = findViewById(lv_id);
         lv.setAdapter(adapter);
         lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
 
-                position_to_edit = position;
+                presenter.onListViewItemClick( position, lv_id, R.id.lv_permits_user_made );
+                /* position_to_edit = position;
                 dep_line_data = dep_lines_data_array.get(permit_array.get(position));
 
                 // Get info about chosen work permit
@@ -383,7 +311,7 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
                 } else {
                     permit_code = SHOW_PERMIT_CODE;
                 }
-                runPermitBlock(permit_code);
+                runPermitBlock(permit_code); */
             }
         });
     }
@@ -391,37 +319,22 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
     private void buttonsMainSetOnClickListener() {
         // Fill out a work permit form
         bt_fill_permit.setOnClickListener(v -> {
-            dep_line_data = getDepLinesDataItem();
-            runPermitBlock(NEW_PERMIT_CODE);
+            //dep_line_data = getDepLinesDataItem();
+            presenter.onButtonNewClick();
+            //runPermitBlock(NEW_PERMIT_CODE);
         });
 
         // Fill out a work permit form
         bt_check_request.setOnClickListener(v -> {
-            dep_lines_data_array = new ArrayList<>();
-            getBackWithServer(SERVER_GET_ALL, "", "");
+            dep_lines_data_array = new ArrayList<>();   // ??? CHECK IF it can be omit!!!!!!!
+            //getBackWithServer(SERVER_GET_ALL, "", "");
+            presenter.updateViewServerData( SERVER_GET_ALL, "", "" );
         });
     }
 
-    // Get New Department Item
-    private DepLinesData getDepLinesDataItem() {
-        int number;
-        if (dep_lines_data_array.size() == 0) {
-            number = 1;
-        } else {
-            String help_number = dep_lines_data_array.get(dep_lines_data_array.size()-1).getId();
-            number = Integer.parseInt(help_number) + 1;
-        }
-        String et_number =Integer.toString(number);
-
-        DepLinesData dep_line_data = new DepLinesData(
-                et_number, null, department_user,  null, null,true, null,
-                null, null, null,null
-        );
-        return dep_line_data;
-    }
-
     // ************* Start Permit Block ******************************
-    private void runPermitBlock(String permit_code) {
+    @Override
+    public void runPermitBlock(String permit_code) {
 
         initPermitViewLayout(permit_code);
 
@@ -574,7 +487,8 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
         // Delete permit
         bt_delete.setOnClickListener(v -> {
             dep_line_data = null;
-            getBackWithPermitBlock(DATA_WAS_DELETED);
+            //getBackWithPermitBlock(DATA_WAS_DELETED);
+            presenter.onChangeViewData(DATA_WAS_DELETED);
         });
 
         // Save the changes and exit
@@ -583,7 +497,8 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
             if ( code_after_map.equals(DATA_WAS_NOT_CHANGED) || code_after_map.equals(SHOW_PERMIT_CODE) ) {
                 Toast.makeText(this, code_after_map, Toast.LENGTH_LONG).show();
             } else {
-                getBackWithPermitBlock(permit_code);
+                //getBackWithPermitBlock(permit_code);
+                presenter.onChangeViewData(permit_code);
             }
         });
     }
@@ -643,7 +558,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
     // Fill In Permits User Made List
     private void fillInDepsApproveList(String permit_code) {
 
-        String[] from = {"0", "1", "2", "3", "4"};
         int[] to = { R.id.li_permit_depart, R.id.li_permit_required, R.id.li_permit_commun, R.id.li_permit_approvement, R.id.li_permit_date_approve };
         ArrayList<Map<String, String>> data = new ArrayList<>();
         Map<String, String> hashmap_adapter;
@@ -667,17 +581,17 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
 
                 hashmap_adapter = new HashMap<>();
 
-                hashmap_adapter.put(from[0], department);
-                hashmap_adapter.put(from[1], String.valueOf(dep_line_data.getHashmapRequired().get(department)));
-                hashmap_adapter.put(from[2], dep_line_data.getHashmapCommExist().get(department).getValue());
-                hashmap_adapter.put(from[3], "n/a");
-                hashmap_adapter.put(from[4], dep_line_data.getDateApproveHashmap().get(department));
+                hashmap_adapter.put(FROM[0], department);
+                hashmap_adapter.put(FROM[1], String.valueOf(dep_line_data.getHashmapRequired().get(department)));
+                hashmap_adapter.put(FROM[2], dep_line_data.getHashmapCommExist().get(department).getValue());
+                hashmap_adapter.put(FROM[3], "n/a");
+                hashmap_adapter.put(FROM[4], dep_line_data.getDateApproveHashmap().get(department));
 
                 data.add(hashmap_adapter);
             }
         }
 
-        SimpleAdapter adapter = new SimpleAdapter(this, data, R.layout.permit_list_item, from, to);
+        SimpleAdapter adapter = new SimpleAdapter(this, data, R.layout.permit_list_item, FROM, to);
         setAdapterAndItemClickListener(adapter);
     }
 
@@ -718,10 +632,11 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
 
     // ************* End Permit Block ******************************
 
-    private void getBackWithServer(String command, String depID, String value) {
+    /* private void getBackWithServer(String command, String depID, String value) {
+
         new OkHttpRequest().serverGetback(this, command, depID, value);
         refreshMainStatus(DATA_REQUEST_PROCESSING);
-    }
+    } */
 
    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -738,7 +653,9 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
                 break;
             case R.id.serv_config_item:
                 //getBackWithServer(CHANGE_CONFIG_SERVER, sharedPrefs.getString(MARKER_MAX_NUMBER, ""));
+                //presenter.updateViewServerData(getBaseContext(), CHANGE_CONFIG_SERVER, sharedPrefs.getString(MARKER_MAX_NUMBER, ""), "");
                 break;
+
             case R.id.version:
                 Toast.makeText(getApplicationContext(), getApplicationContext().getResources().getString(R.string.version), Toast.LENGTH_LONG).show();
                 break;
@@ -746,6 +663,7 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
     public void refreshMainStatus(String status) {
         tv_main_state.setText(status);
     }
@@ -764,3 +682,10 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Con
         presenter.onDestroy();
     }
 }
+                        /*
+                        case EMPTY_STORAGE_STATE:
+                        case REQUEST_IS_EMPTY:
+                        case NET_ERROR_STATE:
+                        case URL_WAS_NOT_FOUND:
+                        case DATA_WAS_NOT_SAVED:
+                        case DATA_WAS_SAVED: */
