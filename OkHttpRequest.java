@@ -12,15 +12,15 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-public class OkHttpRequest implements KM_Constants{
+public class OkHttpRequest implements KM_Constants, Enums{
     final String FILE_EMPTY = "file_empty";
-
+    String status = DATA_IS_READY;
     int attempt = 0;
     //private static Context context;
 
     public void serverGetback(Context context, String command, String depID, String data) {
         OkHttpClient client = new OkHttpClient();
-        Log.d(LOG_TAG, "OkHttpRequest. Command is:" + command + ";  Data: " + data);
+        //Log.d(LOG_TAG, "OkHttpRequest. Command is:" + command + ";  Data: " + data);
         RequestBody formBody = new FormBody.Builder()
                 .add("command", command)
                 .add("depID", depID)
@@ -36,23 +36,24 @@ public class OkHttpRequest implements KM_Constants{
             @Override
             public void onFailure(final Call call, IOException e) {
                 Log.d(LOG_TAG, "OkHttpRequest: Server ERROR is: " + e.toString());
-                callbackSender(context, command, NET_ERROR_STATE);
+                callbackSender(context, DATA_IS_NOT_READY, NET_ERROR_STATE);
             }
 
             @Override
             public void onResponse(Call call, final Response response) throws IOException {
                 String res = response.body().string();
-                Log.d(LOG_TAG, "OkHttpRequest: Get back with server, response is: " + res);
+                //Log.d(LOG_TAG, "OkHttpRequest: Get back with server, response is: " + res);
                 String message = res;
-                if (res.equals(FILE_EMPTY)) {
-                    message = EMPTY_STORAGE_STATE;
+                if (res.equals(EMPTY_STORAGE_STATE)) {
+                    status = DATA_IS_NOT_READY;
                 }
 
                 if (res.contains(URL_WAS_NOT_FOUND)){
                     message = URL_WAS_NOT_FOUND;
+                    status = DATA_IS_NOT_READY;
                 }
-                callbackSender(context, command, message);
 
+                callbackSender(context, status, message);
             }
         });
     }

@@ -6,7 +6,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Set;
 
-public class DepLinesData {
+public class DepLinesData implements Enums {
     private String id;
     private String place;
     private String depart_master;
