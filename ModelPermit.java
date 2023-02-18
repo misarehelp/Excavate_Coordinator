@@ -11,7 +11,7 @@ import java.util.Map;
 
 public class ModelPermit implements Contract.ModelPermit,  KM_Constants, Enums {
 
-    private int position;
+    private int position, arr_req_length;
     private String place, date_start, comment;
     private boolean [] required_array;
 
@@ -26,10 +26,9 @@ public class ModelPermit implements Contract.ModelPermit,  KM_Constants, Enums {
 
     //init RequiredArray
     @Override
-    public void initRequiredArray( String[] department_array ) {
-        this.required_array = new boolean[department_array.length];
-
-        dataParameters.setDepartmentArray(department_array);
+    public void initRequiredArray() {
+        arr_req_length = dataParameters.getDepartmentArray().length;
+        required_array = new boolean[arr_req_length];
     }
 
     //set Position
@@ -88,7 +87,7 @@ public class ModelPermit implements Contract.ModelPermit,  KM_Constants, Enums {
                     dataParameters.setStateCode(permit_code);
                     dataParameters.setDepLineData(dep_line_data);
 
-                    permit_listener.OnFinishedSetPermitSimpleAdapter(fillInDepsApproveList(permit_code));
+                    permit_listener.OnFinishedSetPermitSimpleAdapter( fillInDepsApproveList(permit_code) );
                     permit_listener.OnFinishedSetPermitIDtextView(dep_line_data.getId());
                     permit_listener.OnFinishedSetPlaceDateComment(dep_line_data.getPlace(), dep_line_data.getStringDateStart(), dep_line_data.getComment());
 
@@ -124,7 +123,7 @@ public class ModelPermit implements Contract.ModelPermit,  KM_Constants, Enums {
     //set Required Deps Array for Permit List View
     @Override
     public void setRequiredDepsArray (AdapterView<?> parent) {
-
+        required_array = new boolean[arr_req_length];
         SparseBooleanArray chosen = ((ListView) parent).getCheckedItemPositions();
         for (int i = 0; i < chosen.size(); i++) {
             required_array[chosen.keyAt(i)] = chosen.valueAt(i);
@@ -149,7 +148,7 @@ public class ModelPermit implements Contract.ModelPermit,  KM_Constants, Enums {
                 // Set View Buttons visibility
                 view_listener.OnFinishedButtonSaveSetViewButtonsVisibility( FILLED_PERMIT_CODE );
                 // Fill in Department approvement List
-                permit_listener.OnFinishedSetPermitSimpleAdapter(fillInDepsApproveList( code ));
+                permit_listener.OnFinishedSetPermitSimpleAdapter( fillInDepsApproveList(code) );
 
             } else {
                 permit_listener.OnFinishedShowToast(message);
@@ -165,12 +164,13 @@ public class ModelPermit implements Contract.ModelPermit,  KM_Constants, Enums {
         int sum = 0;
         String[] department_array = dataParameters.getDepartmentArray();
         // check if the fields departments are empty or inappropriate
-        DepLinesData dep_line_data = dataParameters.getDepLineData();
+        //DepLinesData dep_line_data = dataParameters.getDepLineData();
+        String master = dataParameters.getDepLineData().getDepartMaster();
 
         for (int i = 0; i < required_array.length; i++) {
             if  (required_array[i]) {
                 //check for if department of user-author is unchecked
-                if (department_array[i].equals(dep_line_data.getDepartMaster())) {
+                if (department_array[i].equals(master)) {
                     return AUTHOR_MUST_NOT_BE_CHOSEN;
                 }  else {
                     sum ++;
@@ -186,7 +186,6 @@ public class ModelPermit implements Contract.ModelPermit,  KM_Constants, Enums {
     // Fill In Permits User Made List
     private ArrayList<Map<String, String>> fillInDepsApproveList(String permit_code) {
 
-        //int[] to = { R.id.li_permit_depart, R.id.li_permit_required, R.id.li_permit_commun, R.id.li_permit_approvement, R.id.li_permit_date_approve };
         ArrayList<Map<String, String>> data = new ArrayList<>();
         Map<String, String> hashmap_adapter;
 
@@ -198,7 +197,6 @@ public class ModelPermit implements Contract.ModelPermit,  KM_Constants, Enums {
         }
 
         String[] department_array = dataParameters.getDepartmentArray();
-        //String[] department_array = getDepartmentArray();
 
         for (String department: department_array) {
 
@@ -212,8 +210,9 @@ public class ModelPermit implements Contract.ModelPermit,  KM_Constants, Enums {
                 hashmap_adapter.put(FROM[0], department);
                 hashmap_adapter.put(FROM[1], String.valueOf(dep_line_data.getHashmapRequired().get(department)));
                 hashmap_adapter.put(FROM[2], dep_line_data.getHashmapCommExist().get(department).getValue());
-                hashmap_adapter.put(FROM[3], "n/a");
-                hashmap_adapter.put(FROM[4], dep_line_data.getDateApproveHashmap().get(department));
+                /* hashmap_adapter.put(FROM[3], "n/a");
+                hashmap_adapter.put(FROM[4], dep_line_data.getDateApproveHashmap().get(department)); */
+                hashmap_adapter.put(FROM[3], dep_line_data.getDateApproveHashmap().get(department));
 
                 data.add(hashmap_adapter);
             }

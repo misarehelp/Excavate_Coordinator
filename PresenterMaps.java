@@ -9,9 +9,6 @@ public class PresenterMaps implements Contract.PresenterMaps, KM_Constants, Enum
     // creating object of View Interface
     private Contract.ViewMap mapView;
 
-    private DataParameters dataParameters;
-    private LatLng center_point;
-
     // creating object of Model Interface
     private Contract.ModelMap modelMap;
 
@@ -73,8 +70,13 @@ public class PresenterMaps implements Contract.PresenterMaps, KM_Constants, Enum
     }
 
     @Override
+    public void OnFinishedSetUser( String value ) {
+        mapView.setUserTextView(value);
+    }
+
+    @Override
     public void OnFinishedSetMarkerLine( MarkerLineData value ) {
-        mapView.setMarkerLine(value.getPoint1(), value.getPoint2(), value.getDepartment(), value.getDate(), value.getColor());
+        mapView.setMarkerLine(value.getPoint1(), value.getPoint2(), value.getDepartment(), value.getDate(), value.getColor(), value.getMaster());
     }
 
     @Override
@@ -96,6 +98,11 @@ public class PresenterMaps implements Contract.PresenterMaps, KM_Constants, Enum
     @Override
     public void OnFinishedRefreshMapStatus(String value) {
         mapView.refreshMapStatus(value);
+    }
+
+    @Override
+    public void OnFinishedDrawLegend( String[] depart, int [] color_text, int [] color_bg ) {
+        mapView.addColorRowToLegend( depart, color_text, color_bg );
     }
 
     @Override

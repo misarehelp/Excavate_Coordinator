@@ -4,12 +4,9 @@ interface KM_Constants  {
     String LOG_TAG = "myLogs";
     String[] FROM = {"0", "1", "2", "3", "4"};
     String DEPARTMENT_USER = "department_user";
-    String DEP_LINE_DATA = "dep_line_data";
-    String DATA_TYPE = "data_type";
+    String PREFERENCE_SERVER_SETUP = "server_setup";
     String SENDER = "sender";
     String MESSAGE = "message";
-    String PRESENTER = "presenter";
-    String PARAMS_DATA = "params_data";
 
     String DATA_IS_READY = "Данные получены. ";
     String DATA_IS_NOT_READY = "Данные не получены. ";
@@ -21,9 +18,6 @@ interface KM_Constants  {
     String EMPTY_STORAGE_STATE = "Нет данных на сервере";
     String FILLED_PERMIT_CODE = "the fields of a new permit are filled before communications are put";
     String DATA_WAS_SAVED = "Данные сохранены";
-
-    String SAVE_BUTTON_WAS_CLICKED = "save button";
-    String DELETE_BUTTON__WAS_CLICKED = "delete button";
 
     String NEW_PERMIT_CODE = "new_permit_code";
     String EDIT_PERMIT_CODE = "Режим редактирования";
@@ -40,28 +34,17 @@ interface KM_Constants  {
     String SERVER_GET_ALL ="server_get_all";
     String SERVER_PUT_ALL ="server_put_all";
     String SERVER_CHANGE_CONFIG = "server_change_config";
-    String NET_ERROR_GOT_LOCATION_STATE = "2";
-
-    int MAPS_ACTIVITY_REQUEST_CODE = 10;
-    int PERMIT_ACTIVITY_REQUEST_CODE = 11;
 
     String PREF_ACTIVITY = "pref_activity";
-    String BROWSER_MODE = "browser_mode";
+    String MODE_USER = "mode_user";
     String ADMIN = "admin";
     String MASTER = "master";
     String SLAVE = "slave";
-    String SERVER_DELAY_TITLE ="server_delay";
+
     String MAP_TYPE = "map_type";
-    String MARKER_DELAY = "marker_delay";
-    String MARKER_SCALE = "marker_scale";
-    String MARKER_MAX_NUMBER = "marker_max_number";
-    String CHOSEN_KID_MARKERS = "chosen_kid_markers";
-    String MAX_LOCATION_TIME = "max_location_time";
-    String CHANGE_CONFIG_SERVER = "config";
-    String ACTION_FROM_OKHTTP = "action_from_okhttp";
-    String ACTION_FROM_BR = "ru.volganap.nikolay.excavate_coordinator";
+    String MAP_SCALE = "map_scale";
+    String RECORDS_MAX_NUMBER = "records_max_number";
     String URL_ADDR = "https://volganap.ru/excavate_coordinator/index_ec.php";
     String CONFIG_SERVER_STATE = "Изменение настроек на сервере: ";
     String CONFIRM_CONNECTION = "Обратная связь получена!: ";
-    String LOCATION_IS_TURNED_OFF ="The Kid must turn the location on!";
 }

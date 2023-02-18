@@ -4,9 +4,6 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Handler;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.gson.Gson;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -19,12 +16,12 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
     private static final String NO_LINES_SET ="Нет отмеченных коммуникаций";
     private static final Double LAT_BASE = 55.989174;
     private static final Double LONG_BASE = 48.604360;
-    private int[] color_depart = {Color.BLUE, Color.MAGENTA, Color.GREEN, Color.RED, Color.YELLOW, Color.GRAY, Color.LTGRAY,
+    private int[] color_depart = {Color.BLUE, Color.MAGENTA, Color.GREEN, Color.RED, Color.YELLOW, Color.GRAY, Color.parseColor("#FFA16F24"), //brown
                                     Color.DKGRAY, Color.CYAN};
 
     private DepLinesData dep_line_data;
     private DataParameters dataParameters;
-    private String department_user;
+    private String department_user, department_master;
     private HashMap<String, Integer> hashmap_color;
     private String state_code;
     private String marker_code;
@@ -48,26 +45,52 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
 
                 dep_line_data = dataParameters.getDepLineData();
                 state_code = dataParameters.getStateCode();
+                department_master = dep_line_data.getDepartMaster();
                 department_user = dataParameters.getModelDepartmentUser();
+                String [] department_array = dataParameters.getDepartmentArray();
 
                 marker_code = START_LINE_CODE;
 
-                setColorDepartment(dataParameters.getDepartmentArray());
-
                 listener.OnFinishedSetUpButtonsAppearance(state_code);
+
+                listener.OnFinishedSetUser(department_user);
+
+                listener.OnFinishedDrawLegend( department_array, color_depart, getColorBackground(department_array));
 
             }
         }, 0);
 
     }
 
-    private void setColorDepartment( String[] department_array ) {
+    private int [] getColorBackground( String[] department_array ) {
 
         //department_user = dataParameters.getModelDepartmentUser();
+        int [] color_bg = new int [department_array.length];
         hashmap_color = new HashMap<>();
         for (int i=0; i < department_array.length; i++) {
             hashmap_color.put(department_array[i], color_depart[i]);
+            color_bg[i] = getComplementaryColor(color_depart[i]);
         }
+        return color_bg;
+    }
+
+    private int getComplementaryColor( int color) {
+
+        float[] hsv = new float[3];
+        Color.RGBToHSV(Color.red(color), Color.green(color), Color.blue(color),
+                hsv);
+        if (hsv[2] < 0.5) {
+            //hsv[2] = 0.7f;
+            hsv[2] = 0.9f;
+        } else {
+            //hsv[2] = 0.3f;
+            hsv[2] = 0.1f;
+        }
+        hsv[1] = hsv[1] * 0.2f;
+        //hsv[1] = hsv[1] * 0.2f;
+        return Color.HSVToColor(hsv);
+        /*double y = (299 * Color.red(color) + 587 * Color.green(color) + 114 * Color.blue(color)) / 1000;
+        return y >= 128 ? Color.BLACK : Color.WHITE; */
     }
 
     @Override
@@ -81,6 +104,7 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
                     return;
                 }
                 HashMap<String, ArrayList<ArrayList<LatLng>>> linesHashmap = dep_line_data.getLinesHashmap();
+
                 for (String key_department : linesHashmap.keySet()) {
                     // level of department
                     ArrayList<ArrayList<LatLng>> line_group = linesHashmap.get(key_department);
@@ -91,12 +115,12 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
                             LatLng latLng1 = lines.get(i);
                             LatLng latLng2 = lines.get(i+1);
                             String date_approve = dep_line_data.getDateApproveHashmap().get(key_department);
+                            boolean master = department_master.equals(key_department);
 
-                            listener.OnFinishedSetMarkerLine(new MarkerLineData(latLng1, latLng2, key_department, date_approve, hashmap_color.get(key_department)));
+                            listener.OnFinishedSetMarkerLine(new MarkerLineData(latLng1, latLng2, key_department, date_approve, hashmap_color.get(key_department), master));
                         }
                     }
                 }
-
             }
         }, 0);
 
@@ -120,8 +144,6 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
 
             }
         }, 0);
-
-
     }
 
     @Override
@@ -139,8 +161,9 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
             LatLng endPos = line.get(0);
             line.add(endPos);
             lines_group.add(line);
+            boolean master = department_master.equals(department_user);
 
-            listener_map.OnFinishedSetMarkerLine ( new MarkerLineData(firstPos, endPos, department_user, "", hashmap_color.get(department_user)) );
+            listener_map.OnFinishedSetMarkerLine ( new MarkerLineData(firstPos, endPos, department_user, "", hashmap_color.get(department_user), master) );
 
             marker_code = START_LINE_CODE;
             listener_layout.OnFinishedSetUpButtonsAppearance( START_LINE_CODE );
@@ -202,7 +225,6 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
         }
 
         map_listener.OnCloseMapsListenerns();
-
     }
 
     @Override
@@ -281,8 +303,9 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
                 line.add(latLng);
 
                 layout_listener.OnFinishedSetUpButtonsAppearance(marker_code);
+                boolean master = department_master.equals(department_user);
 
-                map_listener.OnFinishedSetMarkerLine ( new MarkerLineData(firstPos, secondPos, department_user, "", hashmap_color.get(department_user)) );
+                map_listener.OnFinishedSetMarkerLine ( new MarkerLineData(firstPos, secondPos, department_user, "", hashmap_color.get(department_user), master) );
 
                 break;
             //default

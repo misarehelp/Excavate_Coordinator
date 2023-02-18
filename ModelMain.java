@@ -17,6 +17,7 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
     private Context context;
 
     private DataParameters dataParameters;
+    private boolean dispather_on;
 
     // initiating the objects of Model
     public ModelMain(Context context, DataParameters dataParameters) {
@@ -26,6 +27,10 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
 
     public void setModelDepLinesDataArray(ArrayList<DepLinesData> dep_lines_data_array) {
         this.dep_lines_data_array = dep_lines_data_array;
+    }
+
+    public void setDispatcherMode ( boolean dispatcher_on ){
+        this.dispather_on = dispatcher_on;
     }
 
     // get dep_lines_data_array
@@ -86,6 +91,7 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
                         status = message;
 
                     } else   {
+                        dep_lines_data_array  = new ArrayList<>();
                         ArrayList<String> array_level_json = new Gson().fromJson(message, ArrayList.class);
                         for (String item: array_level_json) {
                             dep_lines_data_array.add(new Gson().fromJson(item, DepLinesData.class));
@@ -107,17 +113,24 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
     private ArrayList<Map<String, String>> getPermitsUserMadeData() {
         ArrayList<Map<String, String>> data = new ArrayList<>();
         ArrayList<Integer> permit_array_user_made = new ArrayList<>();
+        boolean rule;
 
         for (int i = 0; i < dep_lines_data_array.size(); i++) {
             //check if user has created permits
-            if (dep_lines_data_array.get(i).getDepartMaster().equals(dataParameters.getModelDepartmentUser())) {
+            if (dispather_on) {
+                rule = false;
+            } else {
+                rule = dep_lines_data_array.get(i).getDepartMaster().equals(dataParameters.getModelDepartmentUser());
+            }
+
+            if (rule) {
 
                 Map<String, String> hashmap = new HashMap<>();
                 hashmap.put(FROM[0], dep_lines_data_array.get(i).getId());
                 hashmap.put(FROM[1], dep_lines_data_array.get(i).getPlace());
-                hashmap.put(FROM[2], dep_lines_data_array.get(i).getStringDateStart());
-                hashmap.put(FROM[3], dep_lines_data_array.get(i).getStringDateReg());
-                hashmap.put(FROM[4], dep_lines_data_array.get(i).getPermitApproved());
+
+                hashmap.put(FROM[2], dep_lines_data_array.get(i).getStringDateReg());
+                hashmap.put(FROM[3], dep_lines_data_array.get(i).getPermitApproved());
                 data.add(hashmap);
                 permit_array_user_made.add(i);
             }
@@ -131,17 +144,23 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
     private ArrayList<Map<String, String>> getPermitsAwaitingData() {
         ArrayList<Map<String, String>> data = new ArrayList<>();
         ArrayList<Integer> permit_array_awaiting = new ArrayList<>();
+        boolean rule;
 
         for (int i = 0; i < dep_lines_data_array.size(); i++) {
             //check if user has created permits
-            if (dep_lines_data_array.get(i).getHashmapRequired().get(dataParameters.getModelDepartmentUser())) {
+            if (dispather_on) {
+                rule = true;
+            } else {
+                rule = dep_lines_data_array.get(i).getHashmapRequired().get(dataParameters.getModelDepartmentUser());
+            }
 
+            if ( rule ) {
                 Map<String, String> hashmap = new HashMap<>();
                 hashmap.put(FROM[0], dep_lines_data_array.get(i).getId());
                 hashmap.put(FROM[1], dep_lines_data_array.get(i).getDepartMaster());
                 hashmap.put(FROM[2], dep_lines_data_array.get(i).getPlace());
-                hashmap.put(FROM[3], dep_lines_data_array.get(i).getStringDateStart());
-                hashmap.put(FROM[4], dep_lines_data_array.get(i).getComment());
+                hashmap.put(FROM[3], dep_lines_data_array.get(i).getStringDateReg());
+
                 data.add(hashmap);
                 permit_array_awaiting.add(i);
             }
@@ -155,7 +174,7 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
     @Override
     public void sendModelDataToServer ( Contract.ViewMainLayout view_listener, String command, String depID, String value) {
 
-        dep_lines_data_array = new ArrayList<>();
+        //dep_lines_data_array = new ArrayList<>();
 
         view_listener.OnFinishedButtonSaveSetViewButtonsVisibility(DATA_WAS_NOT_CHANGED);
         view_listener.OnFinishedRefreshViewStatus(DATA_REQUEST_PROCESSING);
@@ -195,12 +214,12 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
                 main_listener.OnFinishedButtonNewListDefineListReqDeps();
                 //Show Permit block and Hide Main Block, Show ID number in View
                 main_listener.OnFinishedSetPermitIDtextView(dep_line_data.getId());
+
+                main_listener.OnFinishedSetPlaceDateComment("", "", "");
                 // Set View Buttons visibility
                 view_listener.OnFinishedButtonSaveSetViewButtonsVisibility( NEW_PERMIT_CODE );
 
                 view_listener.OnFinishedSetPermitBlockState( PermitBlock.VISIBLE );
-
-                main_listener.OnFinishedSetPlaceDateComment("", "", "");
 
             }
         }, 0);
@@ -221,15 +240,16 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
 
                         dep_lines_data_array.remove( position );
 
-                        setModelDepLinesDataArray (dep_lines_data_array);
+                        //setModelDepLinesDataArray (dep_lines_data_array);
                         getBackWithServer ( SERVER_PUT_ALL, "", getDeplineDataArrayJson());
                         break;
 
                     case NEW_PERMIT_CODE:
 
-                        if (dataParameters.getDepLineData().getLinesHashmap() != null) {
-                            dataParameters.setDepLineData(null);
-                        }
+                        /* if (dataParameters.getDepLineData().getLinesHashmap() != null) {
+
+                        } */
+                        dataParameters.setDepLineData(null);
 
                     // no change was made
                     default:
@@ -282,7 +302,7 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
 
         // Send Data to server if changes were
         if (status.equals(DATA_WAS_SAVED)) {
-            setModelDepLinesDataArray(dep_lines_data_array);
+            //setModelDepLinesDataArray(dep_lines_data_array);
             getBackWithServer(SERVER_PUT_ALL, "", getDeplineDataArrayJson());
         }
     }

@@ -1,5 +1,7 @@
 package ru.volganap.nikolay.excavate_coordinator;
 
+import android.view.ViewGroup;
+import android.widget.*;
 import androidx.fragment.app.FragmentActivity;
 
 import android.annotation.SuppressLint;
@@ -14,10 +16,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -33,37 +31,26 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.gson.Gson;
-
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-
-import static java.security.AccessController.getContext;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, KM_Constants, Enums, Contract.ViewMap {
     //public static final String NO_LINES_SET ="Нет отмеченных коммуникаций";
     public static final String CHECK_NO_COMMUNICATIONS =" , либо обозначьте отсутствие коммуникаций";
     public static final int ZOOM_NEW = 10;
     public static final int ZOOM_BASE = 17;
+    public static final int LINE_WIDTH_MASTER = 12;
+    public static final int LINE_WIDTH_USER = 6;
 
     Contract.PresenterMaps presenterMaps;
 
-    //private LatLng firstPos;
     private GoogleMap mMap;
     private UiSettings uiSettings;
     private LatLngBounds.Builder builder;
     private SharedPreferences sharedPrefs;
-    //private ArrayList<LatLng> line =  new ArrayList<>();
-    //private String marker_code;
-    //private String department_user;
-    //private float  mid_zoom = 15;
     private Button bt_map_contour_line, bt_map_end_line, bt_map_clear, bt_map_exit, bt_check_no_lines;
     private TextView tv_maps_state;
-    HashMap<String, Integer> hashmap_color;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,9 +60,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         presenterMaps = new PresenterMaps(this, getIntent());
 
         initMapViewLayout();
-        /* String dep_line_data_json = getIntent().getStringExtra(DEP_LINE_DATA);
-        String permit_code = getIntent().getStringExtra(DATA_TYPE);
-        DepLinesData dep_line_data = new Gson().fromJson(dep_line_data_json, DepLinesData.class); */
+
         initMapsButtons ();
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
@@ -111,7 +96,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.setMapType(m_type);
         } else mMap.setMapType(4);
 
-        //firstPos = null; // Initilization the first point
         mMap.setMyLocationEnabled(true);
         uiSettings = mMap.getUiSettings();
         uiSettings.setZoomControlsEnabled(true);
@@ -122,6 +106,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(center_point, ZOOM_BASE));
     }
 
+    @Override
+    public void setUserTextView( String value) {
+        ((TextView) findViewById(R.id.tv_maps_user)).setText(value);
+    }
+
     //Set up buttons and titles
     @Override
     public void setUpButtonsAppearance(String line_code) {
@@ -130,19 +119,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             //buttons' setup for a new line
             case NEW_PERMIT_CODE:
-                bt_map_contour_line.setVisibility(View.INVISIBLE);
-                bt_map_end_line.setVisibility(View.INVISIBLE);
-                bt_map_clear.setVisibility(View.INVISIBLE);
-                bt_check_no_lines.setVisibility(View.INVISIBLE);
+                bt_map_contour_line.setVisibility(View.GONE);
+                bt_map_end_line.setVisibility(View.GONE);
+                bt_map_clear.setVisibility(View.GONE);
+                bt_check_no_lines.setVisibility(View.GONE);
                 refreshMapStatus( START_LINE_CODE );
-                break;
-
-            //buttons' setup for a permit to be edited
-            case ADD_PERMIT_CODE:
-                bt_map_contour_line.setVisibility(View.INVISIBLE);
-                bt_map_end_line.setVisibility(View.INVISIBLE);
-                bt_map_clear.setVisibility(View.INVISIBLE);
-                refreshMapStatus( START_LINE_CODE + CHECK_NO_COMMUNICATIONS );
                 break;
 
             //buttons' setup for a permit to be edited
@@ -150,11 +131,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             case SHOW_PERMIT_CODE:
             case DATA_WAS_SAVED:
             case DATA_WAS_NOT_CHANGED:
-                bt_map_contour_line.setVisibility(View.INVISIBLE);
-                bt_map_end_line.setVisibility(View.INVISIBLE);
-                bt_map_clear.setVisibility(View.INVISIBLE);
-                bt_check_no_lines.setVisibility(View.INVISIBLE);
+                bt_map_contour_line.setVisibility(View.GONE);
+                bt_map_end_line.setVisibility(View.GONE);
+                bt_map_clear.setVisibility(View.GONE);
+                bt_check_no_lines.setVisibility(View.GONE);
                 refreshMapStatus( SHOW_PERMIT_CODE );
+                bt_map_exit.setText(getResources().getString(R.string.bt_permit_exit));
+                break;
+
+            //buttons' setup for a permit to be edited
+            case ADD_PERMIT_CODE:
+                bt_map_contour_line.setVisibility(View.GONE);
+                bt_map_end_line.setVisibility(View.GONE);
+                bt_map_clear.setVisibility(View.GONE);
+                refreshMapStatus( START_LINE_CODE + CHECK_NO_COMMUNICATIONS );
                 break;
 
             //buttons' setup for the line to be finished
@@ -236,6 +226,42 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
+    public void addColorRowToLegend(String[] depart, int [] color_text, int [] color_bg){
+        int DEPART_ROWS = 5;
+        int DEPART_COLUMNS = 2;
+        String line = "-------- ";
+        int k = 0;
+
+        TableLayout tableLayout = findViewById(R.id.tb_legend);
+
+        for (int i = 0; i < DEPART_COLUMNS; i++) {
+
+            TableRow tableRow = new TableRow(this);
+            tableRow.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT));
+            //tableRow.setBackgroundResource(R.drawable.shelf);
+
+            for (int j = 0; j < DEPART_ROWS; j++) {
+                //ImageView imageView = new ImageView(this);
+                //imageView.setImageResource(R.drawable.book);
+                if ( k < DEPART_ROWS * DEPART_COLUMNS - 1 ) {
+                    String s = line + depart[k];
+                    TextView textView = new TextView(this);
+                    textView.setText(s);
+                    textView.setTextSize(10);
+                    textView.setTextColor(color_text[k]);
+                    textView.setBackgroundColor( color_bg[k]);
+                    textView.setPadding(2, 0, 2, 1);
+                    tableRow.addView(textView, j);
+                    k++;
+                }
+            }
+
+            tableLayout.addView(tableRow, i);
+        }
+    }
+
+    @Override
     public void addMarker(LatLng latLng){
         //
         Marker myMarker = mMap.addMarker(new MarkerOptions()
@@ -251,14 +277,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     //draw a line defined by 2 points
     @Override
-    public void setMarkerLine ( LatLng latLng1, LatLng latLng2, String depart, String date_reg, int color_line ) {
+    public void setMarkerLine ( LatLng latLng1, LatLng latLng2, String depart, String date_reg, int color_line, boolean master ) {
         //int color_line = hashmap_color.get( depart );
+        int line_width = master ? LINE_WIDTH_MASTER : LINE_WIDTH_USER;
         PolylineOptions polylineOptions = new PolylineOptions()
                 .add(latLng2)
                 .add(latLng1)
                 .color(color_line)
                 .clickable(true)
-                .width(4);
+                .width(line_width);
         mMap.addPolyline(polylineOptions);
 
         Double midLatitude = (latLng2.latitude + latLng1.latitude)/2;
@@ -428,4 +455,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         back_intent.putExtra(DEP_LINE_DATA, dep_line_data_json);
         setResult(MAPS_ACTIVITY_REQUEST_CODE, back_intent);
         finish();
-    } */
+    }
+
+    private void init() {
+  PolylineOptions polylineOptions = new PolylineOptions()
+      .add(new LatLng(-5, -30)).add(new LatLng(-5, -20))
+      .add(new LatLng(5, -20)).add(new LatLng(5, -30))
+      .color(Color.MAGENTA).width(1);
+
+  map.addPolyline(polylineOptions);
+
+  PolygonOptions polygoneOptions = new PolygonOptions()
+      .add(new LatLng(-5, -10)).add(new LatLng(-5, 0))
+      .add(new LatLng(5, 0)).add(new LatLng(5, -10))
+      .strokeColor(Color.CYAN).strokeWidth(10).fillColor(Color.GREEN);
+
+  map.addPolygon(polygoneOptions);
+
+  CircleOptions circleOptions = new CircleOptions()
+      .center(new LatLng(0, 15)).radius(500000)
+      .fillColor(Color.YELLOW).strokeColor(Color.DKGRAY)
+      .strokeWidth(5);
+
+  map.addCircle(circleOptions);
+}
+    */

@@ -2,6 +2,7 @@ package ru.volganap.nikolay.excavate_coordinator;
 
 import android.content.Context;
 import android.content.Intent;
+import android.view.View;
 import android.widget.AdapterView;
 import com.google.gson.Gson;
 
@@ -24,26 +25,31 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
     public PresenterMain(Contract.ViewMain mainView, Context context ) {
 
         //this.dataParameters = new DataParameters();
-        this.dataParameters = DataParameters.getInstance();
+        dataParameters = DataParameters.getInstance();
         dataParameters.setStateCode(DATA_WAS_NOT_CHANGED);
         this.mainView = mainView;
-        this.modelMain = new ModelMain(context, dataParameters);
-        this.modelPermit =  new ModelPermit(dataParameters);
+        modelMain = new ModelMain(context, dataParameters);
+        modelPermit =  new ModelPermit(dataParameters);
     }
 
     // ************* start methods passed from View to ModelMain *******************
 
     @Override
     // operations to be performed - Init Main MainViewLayout
-    public void onChangeSharedPrefs( String department_user ) {
+    public void onChangeSharedPrefs( String department_user, boolean dispatcher_on ) {
+        modelMain.setDispatcherMode(dispatcher_on);
         modelMain.sendModelDataToServer ( this, SERVER_GET_ALL, "", "" );
-        dataParameters.setModelDepartmentUser(department_user);
+        if (!dispatcher_on) {
+            dataParameters.setModelDepartmentUser(department_user);
+        }
         mainView.setViewDepartmentUser(department_user);
     }
 
     @Override
     public void onPermissionsGranted( String[] department_array ) {
-        modelPermit.initRequiredArray( department_array );
+
+        dataParameters.setDepartmentArray(department_array);
+        modelPermit.initRequiredArray();
     }
 
     @Override
@@ -59,8 +65,7 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
 
     @Override
     public void onButtonNewClick() {
-        //String number = modelMain.getNewPermitNumber();
-        //modelPermit.setModelPermitButtonNewClick( this, this, number );
+
         modelMain.setModelMainButtonNewClick( this, this );
     }
 
@@ -68,12 +73,13 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
     // method to be called when the Button Delete is clicked
     public void onButtonDeleteClick() {
         int position = modelPermit.getPosition();
+        //modelPermit.initRequiredArray();
         modelMain.updateDataArrayAfterDelete( this, position );
     }
 
     @Override
     // method to be called when the Button Delete is clicked
-    public void onButtonSaveClick() {
+    public void onButtonExitClick() {
         int position = modelPermit.getPosition();
         modelMain.updateDataArrayAfterSave( this, position );
     }
@@ -89,7 +95,7 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
     @Override
     public void onMainActivityResume() {
 
-        onButtonSaveClick();
+        onButtonExitClick();
         /*this.dataParameters = DataParameters.getInstance();
         if (!dataParameters.getStateCode().equals(DATA_WAS_NOT_CHANGED)) {
             modelPermit.updateDataAfterMapsActivity( this, this );
@@ -163,6 +169,7 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
     public void OnFinishedButtonNewListDefineListReqDeps() {
         if (mainView != null) {
             mainView.defineListOfRequiredDeps();
+            mainView.setRequiredDepsVisibility(View.GONE);
         }
     }
 
@@ -187,6 +194,7 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
     public void OnFinishedSetPermitSimpleAdapter( ArrayList<Map<String, String>> data ) {
         if (mainView != null) {
             mainView.setPermitAdapterAndItemClickListener(data);
+            mainView.setRequiredDepsVisibility(View.VISIBLE);
         }
     }
 

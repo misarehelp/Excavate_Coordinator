@@ -57,6 +57,9 @@ public interface Contract {
         // Show Toast for View
         void showToast (String value);
 
+        // Show Toast for View
+        void setRequiredDepsVisibility (int state);
+
         // Run Maps Activity
         //void runMapsActivity( Intent intent );
     }
@@ -68,11 +71,14 @@ public interface Contract {
         // refresh Maps Status
         void refreshMapStatus(String status);
 
+        // set User TextView
+        void setUserTextView(String status);
+
         // set Up Maps Buttons Appearance
         void setUpButtonsAppearance(String status);
 
         // set Up Maps Buttons Appearance
-        void setMarkerLine ( LatLng latLng1, LatLng latLng2, String depart, String date_reg, int color );
+        void setMarkerLine ( LatLng latLng1, LatLng latLng2, String depart, String date_reg, int color, boolean master );
 
         // set On Map Click Listenerns
         void setOnMapClickListenerns ();
@@ -82,6 +88,9 @@ public interface Contract {
 
         // Add Marker on Map
         void addMarker (LatLng latLng);
+
+        // Add Color Legend of Departments
+        void addColorRowToLegend( String[] depart, int [] color_text, int [] color_bg );
 
         // finish Maps Activity
         void finishMapsActivity();
@@ -111,6 +120,8 @@ public interface Contract {
                                         Contract.ViewMainLayout view_listener, Intent intent );
 
         void sendModelDataToServer ( Contract.ViewMainLayout view_listener, String command, String depID, String value);
+
+        void setDispatcherMode ( boolean dispatcher_on );
 
         void updateDataArrayAfterDelete ( Contract.ViewMainLayout view_listener, int position );
 
@@ -161,7 +172,7 @@ public interface Contract {
         // ***************************************************************************************************
 
         //init RequiredArray for Permit List View
-        void initRequiredArray( String[] department_array );
+        void initRequiredArray();
 
         //set Position for Main List View
         void setPosition(int position);
@@ -185,6 +196,12 @@ public interface Contract {
 
             // function to be called   once the Handler of Model class completes its execution
             void OnFinishedRefreshMapStatus(String value);
+
+            // function to be called   once the Handler of Model class completes its execution
+            void OnFinishedSetUser(String value);
+
+            // function to be called   once the Handler of Model class completes its execution
+            void OnFinishedDrawLegend( String[] depart, int [] color_text, int [] color_bg );
         }
 
         void initMap( Contract.ModelMap.CallbackSetMapsLayout listener, Intent intent );
@@ -234,7 +251,7 @@ public interface Contract {
     interface PresenterMain {
 
         // method to be called when Main Activity initiliazes
-        void onChangeSharedPrefs( String department_user );
+        void onChangeSharedPrefs( String department_user, boolean dispatcher_on );
 
         // method to be called when Main Permissions are Granted
         void onPermissionsGranted ( String[] department_array );
@@ -246,7 +263,7 @@ public interface Contract {
         void onButtonDeleteClick();
 
         // on Button Save Click
-        void onButtonSaveClick();
+        void onButtonExitClick();
 
         // method to be called when the Button Check is clicked
         void onButtonCheckClick();
@@ -306,10 +323,10 @@ public interface Contract {
     interface DataParameters {
         // ***************************************************************************************************
         //Set Department Array
-        public void setDepartmentArray(String[] department_array);
+        void setDepartmentArray(String[] department_array);
 
         //Get Department Array
-        public String[] getDepartmentArray();
+        String[] getDepartmentArray();
 
         // Get Model Department User
         String getModelDepartmentUser();

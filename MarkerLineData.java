@@ -8,13 +8,15 @@ public class MarkerLineData {
     private String department;
     private String date;
     private int color;
+    private boolean master;
 
-    public MarkerLineData( LatLng point1, LatLng point2, String department, String date, int color  ) {
+    public MarkerLineData( LatLng point1, LatLng point2, String department, String date, int color, boolean master  ) {
         this.point1 = point1;
         this.point2 = point2;
         this.department = department;
         this.date = date;
         this.color = color;
+        this.master = master;
     }
 
     public LatLng getPoint1 () {
@@ -36,4 +38,6 @@ public class MarkerLineData {
     public int getColor () {
         return color;
     }
+
+    public  boolean getMaster() { return master;}
 }
