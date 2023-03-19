@@ -4,13 +4,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.view.View;
 import android.widget.AdapterView;
-import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.Map;
 
-public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enums, Contract.ViewMainLayout,
-        Contract.ModelMain.OnFinishedSetMainViewLayout,
+public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enums, Contract.ViewMainLayout, Contract.ModelMain.OnFinishedSetMainViewLayout,
         Contract.ModelPermit.OnFinishedSetMainViewLayout {
 
     // creating object of View Interface
@@ -24,24 +22,67 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
     // initiating the objects of View and Model Interface
     public PresenterMain(Contract.ViewMain mainView, Context context ) {
 
-        //this.dataParameters = new DataParameters();
         dataParameters = DataParameters.getInstance();
         dataParameters.setStateCode(DATA_WAS_NOT_CHANGED);
+        dataParameters.setMapIsDone(false);
+
         this.mainView = mainView;
-        modelMain = new ModelMain(context, dataParameters);
-        modelPermit =  new ModelPermit(dataParameters);
+
+        modelMain = new ModelMain(context, dataParameters, mainView.getDepartmentEntriesArray(), mainView.getDepartmentValuesArray());
+        modelPermit =  new ModelPermit(dataParameters, mainView.getDepartmentEntriesArray().length);
     }
 
     // ************* start methods passed from View to ModelMain *******************
 
     @Override
     // operations to be performed - Init Main MainViewLayout
-    public void onChangeSharedPrefs( String department_user, boolean dispatcher_on ) {
-        modelMain.setDispatcherMode(dispatcher_on);
-        modelMain.sendModelDataToServer ( this, SERVER_GET_ALL, "", "" );
-        if (!dispatcher_on) {
-            dataParameters.setModelDepartmentUser(department_user);
+    public void onChangeSharedPrefs( String key) {
+
+        String department_user = mainView.getViewDepartmentUser();
+        boolean dispatcher_on = isDispatcherOn();
+
+        if (key.equals(DEPARTMENT_USER)) {
+            sendUserToModelAndSetView( department_user);
         }
+        if (key.equals(MODE_USER)) {
+            // trigger when Mode user is changed
+            if (dispatcher_on) {
+                department_user = mainView.getViewModeUser();
+            }
+
+            sendUserToModelAndSetView( department_user);
+        }
+
+    }
+
+    @Override
+    // operations to be performed - Change Server Preferences
+    public void onChangeServerPreferences( String max_records_number) {
+
+        modelMain.sendModelDataToServer ( this, SERVER_CHANGE_CONFIG, "", max_records_number );
+    }
+
+    private boolean isDispatcherOn () {
+        boolean state = mainView.getViewModeUser().equals(mainView.getDispatcherDefault());
+        mainView.setViewUserMadeBlockVisibility(state);
+        dataParameters.setDispatcherMode(state);
+        return state;
+    }
+
+    private void sendUserToModelAndSetView( String department_user) {
+
+        String previous_user = dataParameters.getModelDepartmentUser();
+        if ( null == previous_user ) {
+            previous_user = department_user;
+        }
+
+        if (dataParameters.getDispatcherMode()) {
+            modelMain.sendModelDataToServer(this, SERVER_CLEAR_BUSY, previous_user, "");
+        } else {
+            modelMain.sendModelDataToServer(this, SERVER_CLEAR_BUSY, previous_user, SERVER_CLEAR_BUSY);
+        }
+
+        dataParameters.setModelDepartmentUser(department_user);
         mainView.setViewDepartmentUser(department_user);
     }
 
@@ -49,12 +90,19 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
     public void onPermissionsGranted( String[] department_array ) {
 
         dataParameters.setDepartmentArray(department_array);
-        modelPermit.initRequiredArray();
+        dataParameters.setMaxRecordsNumber(mainView.getMaxRecordsNumber());
+
+        if (isDispatcherOn()) {
+            onChangeSharedPrefs(MODE_USER);
+        } else {
+            onChangeSharedPrefs(DEPARTMENT_USER);
+        }
     }
 
     @Override
     public void onButtonCheckClick() {
-        modelMain.sendModelDataToServer ( this, SERVER_GET_ALL, "", "" );
+
+        modelMain.sendModelDataToServer ( this, SERVER_GET_BY_DEP, dataParameters.getModelDepartmentUser(), "" );
     }
 
     @Override
@@ -64,49 +112,59 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
     }
 
     @Override
-    public void onButtonNewClick() {
+    // operations to be performed - on Menu item "Show Archive" click
+    public void onShowArchiveClick() {
+        modelMain.sendModelDataToServer ( this, SERVER_GET_ARCHIVE, "", "" );
+    }
 
-        modelMain.setModelMainButtonNewClick( this, this );
+    @Override
+    // operations to be performed - on Menu item "Clear ID counter" click
+    public void onClearIdCounterClick() {
+        modelMain.sendModelDataToServer ( this, SERVER_CLEAR_START_ID, "", "" );
+    }
+
+    @Override
+    public void onButtonNewClick() {
+        modelMain.getBackWithServer(SERVER_GET_NEXT_ID,"","");
+        //modelMain.setModelMainButtonNewClick( this, this );
     }
 
     @Override
     // method to be called when the Button Delete is clicked
     public void onButtonDeleteClick() {
-        int position = modelPermit.getPosition();
-        //modelPermit.initRequiredArray();
-        modelMain.updateDataArrayAfterDelete( this, position );
+        modelMain.updateDataArrayAfterDelete( this );
     }
 
     @Override
     // method to be called when the Button Delete is clicked
     public void onButtonExitClick() {
-        int position = modelPermit.getPosition();
-        modelMain.updateDataArrayAfterSave( this, position );
+        modelMain.updateDataArrayAfterSave( this );
     }
 
     @Override
     // method to be called when the Button Put/Show Communications is clicked
     public void onButtonShowMapClick( Context context ) {
-
+        if (dataParameters.getDispatcherMode () ) {
+            dataParameters.setStateCode(SHOW_PERMIT_CODE);
+        }
         Intent maps_activity = new Intent(context, MapsActivity.class);
         context.startActivity(maps_activity);
     }
 
     @Override
     public void onMainActivityResume() {
-
-        onButtonExitClick();
-        /*this.dataParameters = DataParameters.getInstance();
-        if (!dataParameters.getStateCode().equals(DATA_WAS_NOT_CHANGED)) {
-            modelPermit.updateDataAfterMapsActivity( this, this );
-        } */
+        //this.dataParameters = DataParameters.getInstance();
+        if (dataParameters.getMapIsDone()) {
+            dataParameters.setMapIsDone(false);
+            onButtonExitClick();
+        }
     }
     // ************* start methods passed from View to ModelPermit *******************
 
     @Override
-    public void onButtonDepsChooseClick (String value, String sample, String place, String date_start, String comment) {
+    public void onButtonDepsChooseClick (String value, String sample, String place, String date_start, String date_end, String comment) {
         modelPermit.setModelPermitButtonDepsChooseClick(this, this, value, sample );
-        modelPermit.setModelPermitPlaceDateComment ( place, date_start, comment );
+        modelPermit.setModelPermitPlaceDateComment ( place, date_start, date_end, comment );
     }
 
     @Override
@@ -136,6 +194,19 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
         if (mainView != null) {
             mainView.fillInPermitsAwaitingList(data);
         }
+    }
+
+    @Override
+    // method to start Filling a New Permit
+    public void OnFinishedGetNumberOfServerRecords () {
+
+        modelMain.setModelMainButtonNewClick( this, this );
+    }
+
+    @Override
+    // method to start Filling a New Permit
+    public void OnFinishedClearBusyServerStatus () {
+        onButtonCheckClick();
     }
 
     // ************* start  of callbacks passed from ModelPermit *******************
@@ -183,9 +254,9 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
 
     @Override
     // method to return code to  MainActivity
-    public void OnFinishedSetPlaceDateComment( String place, String date, String comment ) {
+    public void OnFinishedSetPlaceDateComment( String place, String date_st, String date_end, String comment ) {
         if (mainView != null) {
-            mainView.setPlaceDateComment( place, date, comment );
+            mainView.setPlaceDateComment( place, date_st, date_end, comment );
         }
     }
 
@@ -225,21 +296,7 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
 
     @Override
     public void onDestroy() {
+        modelMain.sendModelDataToServer(this, SERVER_CLEAR_BUSY, dataParameters.getModelDepartmentUser(), "" );
         mainView = null;
     }
 }
-
-
-//String permit_code = modelPermit.getStateCode();
-//String dep_line_data_json = modelPermit.getDepLineDataJson();
-//String presenter_main_json = new Gson().toJson(PresenterMain.class);
-//String params_json = new Gson().toJson( dataParameters );
-
-//maps_activity.putExtra(DEP_LINE_DATA, dep_line_data_json);
-//maps_activity.putExtra(DATA_TYPE, permit_code);
-//maps_activity.putExtra(PARAMS_DATA, params_json);
-
-        /* SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putString("Name","Harneet");
-        editor.apply(); */

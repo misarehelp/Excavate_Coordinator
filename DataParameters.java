@@ -7,6 +7,10 @@ public class DataParameters implements Contract.DataParameters {
     private String department_user;
     private DepLinesData dep_line_data;
     private String state_code;
+    private boolean map_is_done;
+    private boolean dispatcher_on;
+    private String max_records_number;
+    private int position = 0;
 
     private String[] department_array;
 
@@ -22,6 +26,25 @@ public class DataParameters implements Contract.DataParameters {
         return INSTANCE;
     }
 
+    //set Position
+    public void setPosition(int position) {
+        this.position = position;
+    }
+
+    //get Position
+    public int getPosition() {
+        return this.position;
+    }
+
+    //set Dispatcher Mode
+    public void setDispatcherMode ( boolean dispatcher_on ) {
+        this.dispatcher_on = dispatcher_on;
+    }
+
+    //get Dispatcher Mode
+    public boolean getDispatcherMode () {
+        return this.dispatcher_on;
+    }
 
     //get Department Array
     public void setDepartmentArray(String[] department_array) {
@@ -53,11 +76,6 @@ public class DataParameters implements Contract.DataParameters {
         return dep_line_data;
     }
 
-    // Get DepLinesDataJson
-    public String getDepLineDataJson() {
-        return new Gson().toJson(dep_line_data);
-    }
-
     //set State Code
     public void setStateCode(String state_code) {
         this.state_code = state_code;
@@ -66,6 +84,26 @@ public class DataParameters implements Contract.DataParameters {
     //get State Code
     public String getStateCode() {
         return this.state_code;
+    }
+
+    //set MapIsDone Code
+    public void setMapIsDone (boolean map_is_done) {
+        this.map_is_done = map_is_done;
+    }
+
+    //get MapIsDone Code
+    public boolean getMapIsDone () {
+        return this.map_is_done;
+    }
+
+    //set Max Records Number
+    public void setMaxRecordsNumber(String max_records_number) {
+        this.max_records_number = max_records_number;
+    }
+
+    //get Max Records Number
+    public String getMaxRecordsNumber() {
+        return this.max_records_number;
     }
 
 }

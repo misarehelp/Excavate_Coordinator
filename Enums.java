@@ -3,8 +3,10 @@ package ru.volganap.nikolay.excavate_coordinator;
 public interface Enums {
     enum Approvement {
 
-        UNKNOWN("нет данных"),
-        YES("есть"),
+        UN("н/д"),
+        ND("---"),
+        YES("да"),
+        EX("есть"),
         NO("нет");
 
         private final String value;
@@ -19,17 +21,24 @@ public interface Enums {
     }
 
     enum PermitBlock {
-        VISIBLE("visible"),
-        INVISIBLE("invisible");
+        VISIBLE,
+        INVISIBLE;
+    }
+
+    enum PermitState {
+        OP ("откр."),
+        AP ("согл."),
+        CL ("закр.");
 
         private final String value;
 
-        PermitBlock(String value) {
+        PermitState(String value) {
             this.value = value;
         }
 
         String getValue() {
             return value;
         }
+
     }
 }

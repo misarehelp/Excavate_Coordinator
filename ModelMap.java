@@ -42,6 +42,7 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
             public void run() {
 
                 dataParameters = DataParameters.getInstance();
+                dataParameters.setMapIsDone(true);
 
                 dep_line_data = dataParameters.getDepLineData();
                 state_code = dataParameters.getStateCode();
@@ -64,7 +65,6 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
 
     private int [] getColorBackground( String[] department_array ) {
 
-        //department_user = dataParameters.getModelDepartmentUser();
         int [] color_bg = new int [department_array.length];
         hashmap_color = new HashMap<>();
         for (int i=0; i < department_array.length; i++) {
@@ -80,14 +80,12 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
         Color.RGBToHSV(Color.red(color), Color.green(color), Color.blue(color),
                 hsv);
         if (hsv[2] < 0.5) {
-            //hsv[2] = 0.7f;
             hsv[2] = 0.9f;
         } else {
-            //hsv[2] = 0.3f;
             hsv[2] = 0.1f;
         }
         hsv[1] = hsv[1] * 0.2f;
-        //hsv[1] = hsv[1] * 0.2f;
+
         return Color.HSVToColor(hsv);
         /*double y = (299 * Color.red(color) + 587 * Color.green(color) + 114 * Color.blue(color)) / 1000;
         return y >= 128 ? Color.BLACK : Color.WHITE; */
@@ -141,7 +139,6 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
                 }
                 // Initilization the first point
                 listener.OnFinishedCenterMap(center_point);
-
             }
         }, 0);
     }
@@ -149,7 +146,7 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
     @Override
     public void checkOnMapClickListenerns( Contract.ModelMap.CallbackOnMapReady listener ) {
 
-        if (( state_code.equals(NEW_PERMIT_CODE)) || ( state_code.equals(ADD_PERMIT_CODE ))) {
+        if (( state_code.equals(NEW_PERMIT_CODE)) || ( state_code.equals(CHANGE_PERMIT_CODE ))) {
             listener.OnFinishedSetOnMapClickListenerns();;
         }
     }
@@ -204,7 +201,7 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
         //Save all the lines to dep_line_data
         DepLinesData dep_line_data = dataParameters.getDepLineData();
 
-        if ( (state_code.equals(ADD_PERMIT_CODE)) || (state_code.equals(NEW_PERMIT_CODE)) ) {
+        if ( (state_code.equals(CHANGE_PERMIT_CODE)) || (state_code.equals(NEW_PERMIT_CODE)) ) {
             HashMap<String, ArrayList<ArrayList<LatLng>>> lines_hashmap = new HashMap<>();
 
             if ( (lines_group != null) && (lines_group.size() != 0) ) {
@@ -213,7 +210,7 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
                 }
                 lines_hashmap.put(department_user, lines_group);
                 dep_line_data.setLinesHashmap(lines_hashmap);
-                dep_line_data = getCommAndDateAproveSet( dep_line_data, dataParameters.getStateCode(), Approvement.YES );
+                dep_line_data = getCommAndDateAproveSet( dep_line_data, dataParameters.getStateCode(), Approvement.EX );
 
                 dataParameters.setDepLineData(dep_line_data);
                 //code = DATA_WAS_SAVED ;
@@ -233,7 +230,6 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
         DepLinesData dep_line_data = getCommAndDateAproveSet( dataParameters.getDepLineData(), dataParameters.getStateCode(), Approvement.NO );
 
         dataParameters.setDepLineData(dep_line_data);
-        //dataParameters.setStateCode( DATA_WAS_SAVED );
 
         map_listener.OnCloseMapsListenerns();
     }
@@ -243,18 +239,18 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
 
         String str_date = getDateNowToString ();
 
-        // set the communications YES state
-        HashMap<String, Approvement> hashmap_comm_exist = dep_line_data.getHashmapCommExist();
-        hashmap_comm_exist.put(department_user, appr);
-        dep_line_data.setHashmapCommExist(hashmap_comm_exist);
-
-        // set the Date Approve YES state
-        HashMap<String, String> date_approve_hashmap = dep_line_data.getDateApproveHashmap();
-        date_approve_hashmap.put(department_user, str_date);
-        dep_line_data.setDateApproveHashmap(date_approve_hashmap);
-
         if ( code.equals( NEW_PERMIT_CODE )) {
             dep_line_data.setStringDateReg( str_date );
+        } else {
+            // set the communications state
+            HashMap<String, Approvement> hashmap_comm_exist = dep_line_data.getHashmapCommExist();
+            hashmap_comm_exist.put(department_user, appr);
+            dep_line_data.setHashmapCommExist(hashmap_comm_exist);
+
+            // set the Date Approve state
+            HashMap<String, String> date_approve_hashmap = dep_line_data.getDateApproveHashmap();
+            date_approve_hashmap.put(department_user, str_date);
+            dep_line_data.setDateApproveHashmap(date_approve_hashmap);
         }
 
         return dep_line_data;
@@ -275,7 +271,6 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
             return;
         }
         //Add point to ArrayList of line
-        //line.add(latLng);
         switch (marker_code) {
             //draw a start point for a new line
             case START_LINE_CODE:
@@ -312,16 +307,5 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
             default:
                 break;
         }
-        //secondPos = (null == firstPos) ? latLng : firstPos;
     }
 }
-
-    /* private void setResultToPermitActivity(DepLinesData dep_line_data, String code) {
-
-        Intent back_intent = getIntent();
-        back_intent.putExtra(DATA_TYPE, code);
-        String dep_line_data_json = new Gson().toJson(dep_line_data);
-        back_intent.putExtra(DEP_LINE_DATA, dep_line_data_json);
-        setResult(MAPS_ACTIVITY_REQUEST_CODE, back_intent);
-        finish();
-    } */

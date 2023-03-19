@@ -23,14 +23,8 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.maps.model.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -127,7 +121,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 break;
 
             //buttons' setup for a permit to be edited
-            case EDIT_PERMIT_CODE:
+            case EDIT_MASTER_PERMIT_CODE:
             case SHOW_PERMIT_CODE:
             case DATA_WAS_SAVED:
             case DATA_WAS_NOT_CHANGED:
@@ -140,7 +134,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 break;
 
             //buttons' setup for a permit to be edited
-            case ADD_PERMIT_CODE:
+            case CHANGE_PERMIT_CODE:
                 bt_map_contour_line.setVisibility(View.GONE);
                 bt_map_end_line.setVisibility(View.GONE);
                 bt_map_clear.setVisibility(View.GONE);
@@ -171,41 +165,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 break;
 
             default:
-
         }
     }
 
     public void initMapsButtons () {
-
         //Click to start drawing lines
-        bt_map_contour_line.setOnClickListener(v -> {
-
-            presenterMaps.onButtonContourLineClick();
-        });
+        bt_map_contour_line.setOnClickListener(v -> { presenterMaps.onButtonContourLineClick(); });
 
         //Click to stop drawing lines
-        bt_map_end_line.setOnClickListener(v -> {
-            //Add line group to ArrayList of group of lines
-            presenterMaps.onButtonEndLineClick();
-        });
+        bt_map_end_line.setOnClickListener(v -> { presenterMaps.onButtonEndLineClick(); });
 
         //Click to clear lines
-        bt_map_clear.setOnClickListener(v -> {
-
-            presenterMaps.onButtonMapClearClick();
-        });
+        bt_map_clear.setOnClickListener(v -> { presenterMaps.onButtonMapClearClick(); });
 
         //Click to stop drawing lines
-        bt_map_exit.setOnClickListener(v -> {
-            //Save all the lines to dep_line_data
-            presenterMaps.onButtonMapExitClick();
-        });
+        bt_map_exit.setOnClickListener(v -> { presenterMaps.onButtonMapExitClick(); });
 
         //Click to check there is no communications of chosen department user
-        bt_check_no_lines.setOnClickListener(v -> {
-
-            presenterMaps.onButtonCheckNoLinesClick();
-        });
+        bt_check_no_lines.setOnClickListener(v -> { presenterMaps.onButtonCheckNoLinesClick(); });
     }
 
     @Override
@@ -214,7 +191,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
-
                 presenterMaps.OnMapClickListener(latLng);
             }
         });
@@ -270,11 +246,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         myMarker.setTag(null);
     }
 
-    @Override
-    public void refreshMapStatus(String status) {
-        tv_maps_state.setText(status);
-    }
-
     //draw a line defined by 2 points
     @Override
     public void setMarkerLine ( LatLng latLng1, LatLng latLng2, String depart, String date_reg, int color_line, boolean master ) {
@@ -287,65 +258,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .clickable(true)
                 .width(line_width);
         mMap.addPolyline(polylineOptions);
-
-        Double midLatitude = (latLng2.latitude + latLng1.latitude)/2;
-        Double midLongitude = (latLng2.longitude + latLng1.longitude)/2;
-        LatLng midLatLng = new LatLng(midLatitude, midLongitude);
-
-        /*BitmapDescriptor bitmapDescriptor = BitmapDescriptorFactory.defaultMarker();
-         if (i==0) {
-            bitmapDescriptor = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
-        } */
-        String snippet_data = "Служба: " + depart + "\n" + "Дата и время: " + date_reg;
-
-        /* Marker marker = mMap.addMarker(new MarkerOptions()
-                .position(midLatLng)
-                .title(depart)
-                .alpha(0.0f)
-                //.snippet(snippet_data)
-                .zIndex(3)
-                //.icon(bitmapDescriptor)
-                .anchor(0.0f, 0.0f)
-        );
-
-        setMarkerInfoWindowAdapter();
-        marker.showInfoWindow(); */
     }
 
-    public void setMarkerInfoWindowAdapter() {
-        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
-            @Override
-            public View getInfoWindow(Marker arg0) {
-                return null;
-            }
+    //draw a rectangle defined by 2 points
+    @Override
+    public void setMasterRectangle ( LatLng latLng1, LatLng latLng2, String depart, String date_reg, int color_line, int color_back ) {
 
-            @Override
-            public View getInfoContents(Marker marker) {
-                Context context = getApplicationContext();
-                LinearLayout info = new LinearLayout(context);
-                info.setOrientation(LinearLayout.VERTICAL);
-                TextView title = new TextView(context);
-                title.setTextColor(Color.BLACK);
-                title.setGravity(Gravity.CENTER);
-                title.setTypeface(null, Typeface.BOLD);
-                title.setText(marker.getTitle());
-                TextView snippet = new TextView(context);
-                snippet.setTextColor(Color.GRAY);
-                snippet.setText(marker.getSnippet());
-                info.addView(title);
-                info.addView(snippet);
-                return info;
-            }
-        });
+        // create the other 2 points of the rectangle
+        LatLng latLng3 = new LatLng(latLng1.latitude, latLng2.longitude);
+        LatLng latLng4 = new LatLng(latLng2.latitude, latLng1.longitude);
+
+        mMap.addPolygon(new PolygonOptions()
+                        .add(latLng1)
+                        .add(latLng3)
+                        .add(latLng2)
+                        .add(latLng4)
+                        .strokeWidth(LINE_WIDTH_MASTER)
+                        .strokeColor(color_line)
+                        .fillColor(color_back));
+
     }
 
-    public void defineGroupZoom() {
-        LatLngBounds bounds = builder.build();
-        Log.d(LOG_TAG, "MapsActivity - setOnCameraIdleListener works, the last marker is set up");
-        int width = getResources().getDisplayMetrics().widthPixels;
-        int height = getResources().getDisplayMetrics().heightPixels;
-        int padding = (int) (width * 0.20);
-        mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding));
+    @Override
+    public void refreshMapStatus(String status) {
+        tv_maps_state.setText(status);
     }
 
     @Override
@@ -479,4 +415,69 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
   map.addCircle(circleOptions);
 }
+
+    public void setMarkerInfoWindowAdapter() {
+        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+            @Override
+            public View getInfoWindow(Marker arg0) {
+                return null;
+            }
+
+            @Override
+            public View getInfoContents(Marker marker) {
+                Context context = getApplicationContext();
+                LinearLayout info = new LinearLayout(context);
+                info.setOrientation(LinearLayout.VERTICAL);
+                TextView title = new TextView(context);
+                title.setTextColor(Color.BLACK);
+                title.setGravity(Gravity.CENTER);
+                title.setTypeface(null, Typeface.BOLD);
+                title.setText(marker.getTitle());
+                TextView snippet = new TextView(context);
+                snippet.setTextColor(Color.GRAY);
+                snippet.setText(marker.getSnippet());
+                info.addView(title);
+                info.addView(snippet);
+                return info;
+            }
+        });
+    }
+
+    //draw a line defined by 2 points
+    @Override
+    public void setMarkerLine ( LatLng latLng1, LatLng latLng2, String depart, String date_reg, int color_line, boolean master ) {
+        //int color_line = hashmap_color.get( depart );
+        int line_width = master ? LINE_WIDTH_MASTER : LINE_WIDTH_USER;
+        PolylineOptions polylineOptions = new PolylineOptions()
+                .add(latLng2)
+                .add(latLng1)
+                .color(color_line)
+                .clickable(true)
+                .width(line_width);
+        mMap.addPolyline(polylineOptions);
+
+        Double midLatitude = (latLng2.latitude + latLng1.latitude)/2;
+        Double midLongitude = (latLng2.longitude + latLng1.longitude)/2;
+        LatLng midLatLng = new LatLng(midLatitude, midLongitude);
+
+        BitmapDescriptor bitmapDescriptor = BitmapDescriptorFactory.defaultMarker();
+         if (i==0) {
+            bitmapDescriptor = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+        }
+    String snippet_data = "Служба: " + depart + "\n" + "Дата и время: " + date_reg;
+
+         Marker marker = mMap.addMarker(new MarkerOptions()
+                .position(midLatLng)
+                .title(depart)
+                .alpha(0.0f)
+                //.snippet(snippet_data)
+                .zIndex(3)
+                //.icon(bitmapDescriptor)
+                .anchor(0.0f, 0.0f)
+        );
+
+        setMarkerInfoWindowAdapter();
+        marker.showInfoWindow();
+}
+
     */

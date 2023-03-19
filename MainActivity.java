@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.preference.ListPreference;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
@@ -33,13 +32,13 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
 public class MainActivity extends AppCompatActivity implements KM_Constants, Enums, Contract.ViewMain{
 
+    private static final String DEFAULT_MAX_RECORDS = "25";
+
     private SharedPreferences sharedPrefs;
     private SharedPreferences.OnSharedPreferenceChangeListener prefChangeListener;
 
-    private String department_array [];
-
     // Main activity layout
-    private EditText et_permit_place, et_permit_date_start, et_permit_comment;
+    private EditText et_permit_place, et_permit_date_start, et_permit_date_end, et_permit_comment;
     private Button bt_fill_permit, bt_check_request, bt_put_show_comm, bt_permit_exit, bt_deps_choose, bt_delete;
     private ListView lv_deps_choose;
 
@@ -58,8 +57,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
         // instantiating object of Presenter Interface
         presenterMain = new PresenterMain(this,this);
         // Init Settings Preferences
-
-        department_array = getResources().getStringArray(R.array.department_entries);
         initSharedPreferences();
         // Init BroadcastReceiver
         initBroadcastReceiver();
@@ -72,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
 
         et_permit_place = findViewById(R.id.et_permit_place);
         et_permit_date_start = findViewById(R.id.et_permit_date_start);
+        et_permit_date_end = findViewById(R.id.et_permit_date_end);
         et_permit_comment = findViewById(R.id.et_permit_comment);
 
         bt_deps_choose = findViewById(R.id.bt_deps_choose);
@@ -107,27 +105,26 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
         ll_main_block.setLayoutParams(main_params);
     }
 
+    @Override
+    public void setViewUserMadeBlockVisibility( boolean dispatcher_on ) {
+        LinearLayout ll_permits_user_made_block = findViewById(R.id.ll_permits_user_made_block);
+        if (dispatcher_on) {
+            ll_permits_user_made_block.setVisibility(View.GONE);
+            ((TextView)findViewById(R.id.tv_permits_awaiting)).setText(getResources().getString(R.string.tv_permits_all));
+        } else {
+            ll_permits_user_made_block.setVisibility(View.VISIBLE);
+            ((TextView)findViewById(R.id.tv_permits_awaiting)).setText(getResources().getString(R.string.tv_permits_awaiting));
+        }
+    }
+
     private void initSharedPreferences() {
         sharedPrefs = getSharedPreferences(PREF_ACTIVITY, MODE_PRIVATE);
 
-        int disp_pos = getResources().getStringArray(R.array.mode_user_type_entries).length-2;
-        String disp_value = getResources().getStringArray(R.array.mode_user_type_entries)[disp_pos];
 
         prefChangeListener = (sharedPreferences, key) -> {
             Log.d(LOG_TAG, "Main - prefChangeListener triggered on: " +key);
-            if (key.equals(DEPARTMENT_USER)) {
-                // trigger when Department user is changed
-                presenterMain.onChangeSharedPrefs(getViewDepartmentUser(), false);
-            }
-            if (key.equals(MODE_USER)) {
-                // trigger when Mode user is changed
-                String value = sharedPrefs.getString(MODE_USER, disp_value);
-                if (value.equals(disp_value)) {
-                    presenterMain.onChangeSharedPrefs(disp_value, true);
-                } else {
-                    presenterMain.onChangeSharedPrefs(getViewDepartmentUser(), false);
-                }
-            }
+
+            presenterMain.onChangeSharedPrefs( key );
         };
         sharedPrefs.registerOnSharedPreferenceChangeListener(prefChangeListener);
         //sharedPrefs.edit().clear().commit();
@@ -136,22 +133,41 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
         PermittedTask scanPermissionsTask = new PermittedTask(this, Manifest.permission.ACCESS_FINE_LOCATION) {
             @Override
             protected void granted() {
-                presenterMain.onChangeSharedPrefs(getViewDepartmentUser(), false);
-                //presenterMain.onPermissionsGranted( getDepartmentArray() );
-                presenterMain.onPermissionsGranted( department_array );
+
+                presenterMain.onPermissionsGranted( getDepartmentEntriesArray() );
             }
         };
         scanPermissionsTask.run();
     }
 
-    /* public  String[] getDepartmentArray (){
-        return getResources().getStringArray(R.array.department_entries);
-    } */
-
+    @Override
     public String getViewDepartmentUser(){
-        //String[] department_array = getDepartmentArray ();
-        return sharedPrefs.getString(DEPARTMENT_USER, department_array[0]);
-        //return department_array[0];
+        return sharedPrefs.getString(DEPARTMENT_USER, getDepartmentEntriesArray()[0]);
+    }
+
+    @Override
+    public String [] getDepartmentValuesArray() {
+        return getResources().getStringArray(R.array.department_values);
+    }
+
+    @Override
+    public String [] getDepartmentEntriesArray() {
+        return getResources().getStringArray(R.array.department_entries);
+    }
+
+    @Override
+    public String getViewModeUser(){
+        return sharedPrefs.getString(MODE_USER, getDispatcherDefault());
+    }
+
+    @Override
+    public String getDispatcherDefault(){
+        return  getResources().getStringArray(R.array.mode_user_type_entries)[1];
+    }
+
+    @Override
+    public String getMaxRecordsNumber(){
+        return sharedPrefs.getString(RECORDS_MAX_NUMBER, DEFAULT_MAX_RECORDS);
     }
 
     @Override
@@ -218,7 +234,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
         lv_deps_choose.setLayoutParams(params);
 
         lv_deps_choose.setVisibility(View.VISIBLE);
-
         ll_permit_data.setVisibility(View.GONE);
     }
 
@@ -230,7 +245,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
         bt_deps_choose.setTextColor(Color.BLACK);
 
         lv_deps_choose.setVisibility(View.GONE);
-
         ll_permit_data.setVisibility(View.VISIBLE);
     }
 
@@ -244,7 +258,9 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
     private void buttonsSetOnClickListener() {
         // Fill out a work permit form
         bt_fill_permit.setOnClickListener(v -> {
-            presenterMain.onButtonNewClick();
+            if (!getViewModeUser().equals(getDispatcherDefault())) {
+                presenterMain.onButtonNewClick();
+            }
         });
 
         // Fill out a work permit form
@@ -263,9 +279,8 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
             // Check if Place and Date data are put in
             if (checkCorrectInputPlaceDate()) {
 
-                presenterMain.onButtonDepsChooseClick(bt_deps_choose.getText().toString(),
-                        getResources().getString(R.string.bt_deps_choose_start),
-                        et_permit_place.getText().toString(), et_permit_date_start.getText().toString(),
+                presenterMain.onButtonDepsChooseClick(bt_deps_choose.getText().toString(), getResources().getString(R.string.bt_deps_choose_start),
+                        et_permit_place.getText().toString(), et_permit_date_start.getText().toString(), et_permit_date_end.getText().toString(),
                         et_permit_comment.getText().toString());
             }
         });
@@ -292,10 +307,11 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
     }
 
     @Override
-    public void setPlaceDateComment (String place, String date_start, String comment ) {
+    public void setPlaceDateComment (String place, String date_start, String date_end, String comment ) {
 
         et_permit_place.setText(place);
         et_permit_date_start.setText(date_start);
+        et_permit_date_end.setText(date_end);
         et_permit_comment.setText(comment);
     }
 
@@ -326,7 +342,7 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
                 break;
 
 
-            case EDIT_PERMIT_CODE:
+            case EDIT_MASTER_PERMIT_CODE:
 
                 bt_fill_permit.setVisibility(View.GONE);
                 bt_check_request.setVisibility(View.GONE);
@@ -337,7 +353,7 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
                 bt_permit_exit.setVisibility(View.VISIBLE);
                 break;
 
-            case ADD_PERMIT_CODE:
+            case CHANGE_PERMIT_CODE:
 
                 bt_fill_permit.setVisibility(View.GONE);
                 bt_check_request.setVisibility(View.GONE);
@@ -390,9 +406,8 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
     @Override
     public void defineListOfRequiredDeps() {
 
-        ArrayAdapter<String> depart_adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_multiple_choice, department_array);
+        ArrayAdapter<String> depart_adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_multiple_choice, getDepartmentEntriesArray());
 
-                                                                //getDepartmentArray());
         //depart_adapter = new MyArrayAdapter(this, R.layout.custom_list, android.R.id.text2, DEPARTMENT_ARRAY);
         lv_deps_choose.setAdapter(depart_adapter);
         lv_deps_choose.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -409,7 +424,8 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
         final String REQUIRED_ID_PLACE_DATE = "заполнить поля: '" + getResources().getString(R.string.et_place)
                 + "', '" + getResources().getString(R.string.et_date_start);
 
-        if ( et_permit_place.getText().toString().isEmpty() || et_permit_date_start.getText().toString().isEmpty() ) {
+        if ( et_permit_place.getText().toString().isEmpty() || et_permit_date_start.getText().toString().isEmpty() ||
+                et_permit_date_end.getText().toString().isEmpty() ) {
             Toast.makeText(this, FILL_IN_FIELDS + REQUIRED_ID_PLACE_DATE, Toast.LENGTH_LONG).show();
             return false;
         } else return true;
@@ -440,17 +456,51 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+
+        String admin = getResources().getStringArray(R.array.mode_user_type_entries)[2];
+        String dispatcher = getResources().getStringArray(R.array.mode_user_type_entries)[1];
+        boolean is_admin = admin.equals(getViewModeUser());
+        boolean is_disp = dispatcher.equals(getViewModeUser());
+
         switch (item.getItemId()) {
+
             case R.id.set_item:
+
                 startActivity(new Intent(this, PrefActivity.class));
                 break;
+
             case R.id.serv_config_item:
-                //getBackWithServer(CHANGE_CONFIG_SERVER, sharedPrefs.getString(MARKER_MAX_NUMBER, ""));
-                //presenter.updateViewServerData(getBaseContext(), CHANGE_CONFIG_SERVER, sharedPrefs.getString(MARKER_MAX_NUMBER, ""), "");
+
+                if ( is_admin ) {
+                    presenterMain.onChangeServerPreferences(getMaxRecordsNumber());
+
+                } else {
+                    Toast.makeText(this, getResources().getString(R.string.server_config_unavailable), Toast.LENGTH_LONG).show();
+                }
+                break;
+
+            case R.id.show_archive:
+
+                if ( is_disp ) {
+                    presenterMain.onShowArchiveClick();
+
+                } else {
+                    Toast.makeText(this, getResources().getString(R.string.server_config_unavailable), Toast.LENGTH_LONG).show();
+                }
+                break;
+
+            case R.id.clear_id_counter:
+
+                if ( is_admin || is_disp ) {
+                    presenterMain.onClearIdCounterClick();
+
+                } else {
+                    Toast.makeText(this, getResources().getString(R.string.server_config_unavailable), Toast.LENGTH_LONG).show();
+                }
                 break;
 
             case R.id.version:
-                Toast.makeText(getApplicationContext(), getApplicationContext().getResources().getString(R.string.version), Toast.LENGTH_LONG).show();
+                Toast.makeText(this, getResources().getString(R.string.version), Toast.LENGTH_LONG).show();
                 break;
         }
         return super.onOptionsItemSelected(item);

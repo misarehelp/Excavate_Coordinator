@@ -3,8 +3,10 @@ package ru.volganap.nikolay.excavate_coordinator;
 interface KM_Constants  {
     String LOG_TAG = "myLogs";
     String[] FROM = {"0", "1", "2", "3", "4"};
+
     String DEPARTMENT_USER = "department_user";
-    String PREFERENCE_SERVER_SETUP = "server_setup";
+    String MODE_USER = "mode_user";
+
     String SENDER = "sender";
     String MESSAGE = "message";
 
@@ -18,11 +20,12 @@ interface KM_Constants  {
     String EMPTY_STORAGE_STATE = "Нет данных на сервере";
     String FILLED_PERMIT_CODE = "the fields of a new permit are filled before communications are put";
     String DATA_WAS_SAVED = "Данные сохранены";
+    String SERVER_BASE_HAS_BEEN_RELEASED_BY = "База данных сервера освобождена пользователем: ";
 
     String NEW_PERMIT_CODE = "new_permit_code";
-    String EDIT_PERMIT_CODE = "Режим редактирования";
+    String EDIT_MASTER_PERMIT_CODE = "Режим редактирования";
     String SHOW_PERMIT_CODE = "Режим просмотра";
-    String ADD_PERMIT_CODE = "add_permit_code";
+    String CHANGE_PERMIT_CODE = "change_permit_code";
 
     String START_LINE_CODE = "Тапом на карте отметьте  стартовую точку начала новой линии";
     String ADD_LINE_CODE = "Укажите тапом на карте следующую точку";
@@ -31,20 +34,22 @@ interface KM_Constants  {
     String CONTOUR_LINE_CODE = "Для обозначения контура необходимо установить не менее 3 точек";
     String CLEAR_LINE_CODE = "Последняя введеная линия (группа линий) удалена";
 
-    String SERVER_GET_ALL ="server_get_all";
-    String SERVER_PUT_ALL ="server_put_all";
+    String SERVER_GET_ALL = "server_get_all";
+    String SERVER_GET_ARCHIVE = "server_get_archive";
+    String SERVER_GET_BY_DEP = "server_get_by_dep";
+    //String SERVER_PUT_ALL = "server_put_all";
+    String SERVER_GET_NEXT_ID  = "server_get_next_id";
+    String SERVER_CLEAR_BUSY = "server_clear_busy";
+    String SERVER_CLEAR_START_ID = "server_clear_start_id";
+
     String SERVER_CHANGE_CONFIG = "server_change_config";
+    String SERVER_ANSWER_CONFIG = "config";
 
     String PREF_ACTIVITY = "pref_activity";
-    String MODE_USER = "mode_user";
-    String ADMIN = "admin";
-    String MASTER = "master";
-    String SLAVE = "slave";
 
     String MAP_TYPE = "map_type";
     String MAP_SCALE = "map_scale";
     String RECORDS_MAX_NUMBER = "records_max_number";
     String URL_ADDR = "https://volganap.ru/excavate_coordinator/index_ec.php";
-    String CONFIG_SERVER_STATE = "Изменение настроек на сервере: ";
     String CONFIRM_CONNECTION = "Обратная связь получена!: ";
 }

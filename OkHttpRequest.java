@@ -13,9 +13,8 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class OkHttpRequest implements KM_Constants, Enums{
-    final String FILE_EMPTY = "file_empty";
-    String status = DATA_IS_READY;
-    int attempt = 0;
+    private String status = DATA_IS_NOT_READY;
+    //int attempt = 0;
     //private static Context context;
 
     public void serverGetback(Context context, String command, String depID, String data) {
@@ -42,29 +41,39 @@ public class OkHttpRequest implements KM_Constants, Enums{
             @Override
             public void onResponse(Call call, final Response response) throws IOException {
                 String res = response.body().string();
-                //Log.d(LOG_TAG, "OkHttpRequest: Get back with server, response is: " + res);
                 String message = res;
-                if (res.equals(EMPTY_STORAGE_STATE)) {
-                    status = DATA_IS_NOT_READY;
-                }
 
-                if (res.contains(URL_WAS_NOT_FOUND)){
+                if ( command.equals(SERVER_CLEAR_BUSY) ) {
+                    if (res.contains(SERVER_BASE_HAS_BEEN_RELEASED_BY)) {
+                        status = SERVER_BASE_HAS_BEEN_RELEASED_BY;
+                    }
+
+                } else if ( res.equals(DATA_WAS_SAVED ) || (res.startsWith("[\"{")) ) {
+                    status = DATA_IS_READY;
+
+                } else if ( command.equals(SERVER_GET_NEXT_ID) ) {
+                    status = command;
+
+                } else if (res.contains(SERVER_ANSWER_CONFIG)) {
+                    status = SERVER_ANSWER_CONFIG;
+
+                } else if (res.contains(URL_WAS_NOT_FOUND)){
                     message = URL_WAS_NOT_FOUND;
-                    status = DATA_IS_NOT_READY;
                 }
 
+                //Log.d(LOG_TAG, "OkHttpRequest: Get back with server, response is: " + res);
                 callbackSender(context, status, message);
             }
         });
     }
 
-    public void callbackSender(Context context, String command, String message) {
+    private void callbackSender(Context context, String status, String message) {
         Intent intent = new Intent();
         //intent.setAction(ACTION_FROM_OKHTTP);
         String action = context.getClass().getSimpleName();
         Log.d(LOG_TAG, "OkHttpRequest: callbackSender, Action is: " + action);
         intent.setAction(action);
-        intent.putExtra(SENDER, command);
+        intent.putExtra(SENDER, status);
         intent.putExtra(MESSAGE, message);
         context.sendBroadcast(intent);
     }

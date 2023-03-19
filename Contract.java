@@ -1,13 +1,9 @@
 package ru.volganap.nikolay.excavate_coordinator;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.widget.AdapterView;
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultLauncher;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -18,11 +14,29 @@ public interface Contract {
         //  set View Permit Block Params
         void setViewPermitBlockParams( Enums.PermitBlock state );
 
+        //  set View User Made Block Visibility
+        void setViewUserMadeBlockVisibility( boolean state );
+
         // get View value of department user from resources
         String getViewDepartmentUser();
 
+        // get View Department User()
+        String getViewModeUser();
+
+        // get View Dispatcher Default()
+        String getDispatcherDefault();
+
+        // get Max Records Number()
+        String getMaxRecordsNumber();
+
         // set View value of department user
         void setViewDepartmentUser( String user );
+
+        // get Resourses values of department array
+        String [] getDepartmentValuesArray();
+
+        // get Resourses entries of department array
+        String [] getDepartmentEntriesArray();
 
         // fill in User Made List
         void fillInPermitsUserMadeList( ArrayList<Map<String, String>> data );
@@ -37,7 +51,7 @@ public interface Contract {
         void setPermitIdTextView( String id );
 
         // Set Place DateStart and Comment fields for View
-        void setPlaceDateComment (String place, String date_start, String comment );
+        void setPlaceDateComment (String place, String date_start, String date_end, String comment );
 
         // Set Permit Fields Visibility for View
         void setViewButtonsFieldsVisibility (String permit_code);
@@ -57,7 +71,7 @@ public interface Contract {
         // Show Toast for View
         void showToast (String value);
 
-        // Show Toast for View
+        // set Required Deps Visibility
         void setRequiredDepsVisibility (int state);
 
         // Run Maps Activity
@@ -79,6 +93,9 @@ public interface Contract {
 
         // set Up Maps Buttons Appearance
         void setMarkerLine ( LatLng latLng1, LatLng latLng2, String depart, String date_reg, int color, boolean master );
+
+        // set Up Maps Buttons Appearance
+        void setMasterRectangle ( LatLng latLng1, LatLng latLng2, String depart, String date_reg, int color_line, int color_back );
 
         // set On Map Click Listenerns
         void setOnMapClickListenerns ();
@@ -104,6 +121,10 @@ public interface Contract {
         void OnFinishedSetPermitBlockState( Enums.PermitBlock state );
         // function to be called   once the Handler of Model class completes its execution
         void OnFinishedRefreshViewStatus( String state );
+        // function to be called   once the Handler of Model class completes its execution
+        void OnFinishedGetNumberOfServerRecords();
+        // function to be called   once the Handler of Model class completes its execution
+        void OnFinishedClearBusyServerStatus();
     }
 
     interface ModelMain {
@@ -119,13 +140,13 @@ public interface Contract {
         void setModelBroadcastReceiver( Contract.ModelMain.OnFinishedSetMainViewLayout main_listener,
                                         Contract.ViewMainLayout view_listener, Intent intent );
 
+        void getBackWithServer ( String command, String depID, String value );
+
         void sendModelDataToServer ( Contract.ViewMainLayout view_listener, String command, String depID, String value);
 
-        void setDispatcherMode ( boolean dispatcher_on );
+        void updateDataArrayAfterDelete ( Contract.ViewMainLayout view_listener );
 
-        void updateDataArrayAfterDelete ( Contract.ViewMainLayout view_listener, int position );
-
-        void updateDataArrayAfterSave ( Contract.ViewMainLayout view_listener, int position );
+        void updateDataArrayAfterSave ( Contract.ViewMainLayout view_listener );
 
         void setModelMainButtonNewClick( Contract.ModelPermit.OnFinishedSetMainViewLayout main_listener,
                                            Contract.ViewMainLayout view_listener );
@@ -138,7 +159,7 @@ public interface Contract {
 
         ArrayList<Integer> getPermitArrayAwaiting();
 
-        String getNewPermitNumber();
+        //String getNewPermitNumber();
     }
 
     interface ModelPermit {
@@ -148,7 +169,7 @@ public interface Contract {
             // function to be called   once the Handler of Model class completes its execution
             void OnFinishedSetPermitIDtextView( String value );
             // function to be called   once the Handler of Model class completes its execution
-            void OnFinishedSetPlaceDateComment( String place, String date, String comment );
+            void OnFinishedSetPlaceDateComment( String place, String date_st, String date_end, String comment );
             // function to be called   once the Handler of Model class completes its execution
             void OnFinishedButtonNewListDefineListReqDeps();
             // function to be called   once the Handler of Model class completes its execution
@@ -164,27 +185,18 @@ public interface Contract {
         void setModelPermitListItemClick( Contract.ModelPermit.OnFinishedSetMainViewLayout permit_listener,
                                           Contract.ViewMainLayout view_listener, Contract.ModelMain modelMain, int position, int id, int viewItew);
 
-        void updateDataAfterMapsActivity( Contract.ModelPermit.OnFinishedSetMainViewLayout permit_listener, Contract.ViewMainLayout view_listener );
+        //void updateDataAfterMapsActivity( Contract.ModelPermit.OnFinishedSetMainViewLayout permit_listener, Contract.ViewMainLayout view_listener );
 
         void setModelPermitButtonDepsChooseClick( Contract.ModelPermit.OnFinishedSetMainViewLayout permit_listener,
                                                   Contract.ViewMainLayout view_listener, String value, String sample );
 
         // ***************************************************************************************************
 
-        //init RequiredArray for Permit List View
-        void initRequiredArray();
-
-        //set Position for Main List View
-        void setPosition(int position);
-
-        //get Position from List View
-        Integer getPosition();
-
         //set Required Deps Array for Permit List View
         void setRequiredDepsArray (AdapterView<?> parent);
 
         //set  Model Permit Place Date Comment
-        void setModelPermitPlaceDateComment(String place, String date_start, String comment);
+        void setModelPermitPlaceDateComment(String place, String date_start, String date_end, String comment);
     }
 
     interface ModelMap {
@@ -250,8 +262,11 @@ public interface Contract {
 // methods defined in Main Presenter
     interface PresenterMain {
 
-        // method to be called when Main Activity initiliazes
-        void onChangeSharedPrefs( String department_user, boolean dispatcher_on );
+        //void onChangeSharedPrefs( String department_user, boolean dispatcher_on );
+        void onChangeSharedPrefs( String key );
+
+        //void on Change Server Preferences;
+        void onChangeServerPreferences( String value );
 
         // method to be called when Main Permissions are Granted
         void onPermissionsGranted ( String[] department_array );
@@ -262,6 +277,12 @@ public interface Contract {
         // on Button Delete Click
         void onButtonDeleteClick();
 
+        // on Menu item "Show Archive" click
+        void onShowArchiveClick();
+
+        // on Menu item "Clear ID counter" click
+        void onClearIdCounterClick();
+
         // on Button Save Click
         void onButtonExitClick();
 
@@ -269,7 +290,7 @@ public interface Contract {
         void onButtonCheckClick();
 
         // method to be called when the Button Check is clicked
-        void onButtonDepsChooseClick( String value, String sample, String place, String date_start, String comment );
+        void onButtonDepsChooseClick( String value, String sample, String place, String date_start, String date_end, String comment );
 
         // method to be called when the Button New is clicked
         void onButtonNewClick();
@@ -339,9 +360,6 @@ public interface Contract {
 
         // Get DepLinesData
         DepLinesData getDepLineData();
-
-        // Get DepLinesDataJson
-        String getDepLineDataJson();
 
         // Get State Code
         String getStateCode();

@@ -4,61 +4,51 @@ import com.google.android.gms.maps.model.LatLng;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Set;
 
 public class DepLinesData implements Enums {
     private String id;
     private String place;
-    private String depart_master;
-    private String date_start, date_reg;
-    private boolean permit_open;
+    private String master;
+    private String date_st, date_reg, date_end;
+    private Enums.PermitState state = PermitState.OP;
     private String comment;
-    private HashMap<String, Boolean> hashmap_required;
-    private HashMap<String, Approvement> hashmap_comm_exist;
-    private HashMap<String, String> date_approve_hashmap;
-    private HashMap<String, ArrayList<ArrayList<LatLng>> > lines_hashmap;
 
-    public DepLinesData(String id, String place, String depart_master, String date_start, String date_reg, boolean permit_open, String comment,
-                        HashMap<String, Boolean> hashmap_required, HashMap<String, Approvement> hashmap_comm_exist,
-                        HashMap<String, String> date_approve_hashmap, HashMap<String, ArrayList<ArrayList<LatLng>>> lines_hashmap) {
-        this.id = id;
-        this.place = place;
-        this.depart_master = depart_master;
-        this.date_start = date_start;
-        this.date_reg = date_reg;
-        this.permit_open = permit_open;
-        this.comment = comment;
-        this.hashmap_required = hashmap_required;
-        this.hashmap_comm_exist = hashmap_comm_exist;
-        this.date_approve_hashmap = date_approve_hashmap;
-        this.lines_hashmap = lines_hashmap;
+    private HashMap<String, Approvement> exist;
+    private HashMap<String, String> dt_approve;
+    private HashMap<String, ArrayList<ArrayList<LatLng>> > lines;
+
+    public DepLinesData() {
     }
 
     //getters
     String getId() {return id;}
     String getPlace() {return place;}
-    String getDepartMaster() {return depart_master;}
+    String getDepartMaster() {return master;}
 
     String getStringDateStart() {
-        return date_start;
+        return date_st;
     }
 
     String getStringDateReg() {
         return date_reg;
     }
 
-    Boolean getPermitOpen() {return permit_open;}
-    String getComment() {return comment;}
-    HashMap<String, Boolean> getHashmapRequired() {return hashmap_required;}
-    HashMap<String, Approvement> getHashmapCommExist() {return hashmap_comm_exist;}
-    HashMap<String, String> getDateApproveHashmap() {return date_approve_hashmap;}
-    HashMap<String, ArrayList<ArrayList<LatLng>>> getLinesHashmap() {return lines_hashmap;}
+    String getStringDateEnd() {
+        return date_end;
+    }
 
-    String getPermitApproved() {
-        String permit_approved = "yes";
-        for(String key : hashmap_required.keySet()) {
-            if (hashmap_required.get(key) && date_approve_hashmap.get(key).equals(Approvement.UNKNOWN.getValue())){
-                permit_approved = "no";
+    Enums.PermitState getPermitState() {return state;}
+    String getComment() {return comment;}
+
+    HashMap<String, Approvement> getHashmapCommExist() {return exist;}
+    HashMap<String, String> getDateApproveHashmap() {return dt_approve;}
+    HashMap<String, ArrayList<ArrayList<LatLng>>> getLinesHashmap() {return lines;}
+
+    Approvement getPermitApproved() {
+        Approvement permit_approved = Approvement.YES;
+        for(String key : dt_approve.values()) {
+            if ( key.equals(Approvement.ND.getValue())) {
+                permit_approved = Approvement.NO;
             }
         }
         return permit_approved;
@@ -69,21 +59,22 @@ public class DepLinesData implements Enums {
 
     void setPlace(String place) {this.place = place;}
 
-    void setDepartMaster(String depart_master) {this.depart_master = depart_master;}
+    void setDepartMaster(String master) {this.master = master;}
 
-    void setStringDateStart(String date_start) {this.date_start = date_start;}
+    void setStringDateStart(String date_st) {this.date_st = date_st;}
 
     void setStringDateReg(String date_reg) {this.date_reg = date_reg;}
 
-    void setPermitOpen(boolean permit_open) {this.permit_open = permit_open;}
+    void setStringDateEnd(String date_end) {this.date_end = date_end;}
+
+    void setPermitState(Enums.PermitState state) {this.state = state;}
 
     void setComment(String comment) {this.comment = comment;}
 
-    void setHashmapRequired(HashMap<String, Boolean> hashmap_required) {this.hashmap_required = hashmap_required;}
+    void setHashmapCommExist(HashMap<String, Approvement> exist) {this.exist = exist;}
 
-    void setHashmapCommExist(HashMap<String, Approvement> hashmap_comm_exist) {this.hashmap_comm_exist = hashmap_comm_exist;}
+    void setDateApproveHashmap(HashMap<String, String> dt_approve) {this.dt_approve = dt_approve;}
 
-    void setDateApproveHashmap(HashMap<String, String> date_approve_hashmap) {this.date_approve_hashmap = date_approve_hashmap;}
+    void setLinesHashmap(HashMap<String, ArrayList<ArrayList<LatLng>>> lines) {this.lines = lines;}
 
-    void setLinesHashmap(HashMap<String, ArrayList<ArrayList<LatLng>>> lines_hashmap) {this.lines_hashmap = lines_hashmap;}
 }

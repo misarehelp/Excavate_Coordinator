@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
@@ -12,25 +13,26 @@ import java.util.Map;
 
 public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
 
+    private String  SERVER_ADD_PERMIT = "server_add_permit";
+    private String  SERVER_CHANGE_PERMIT = "server_change_permit";
+    private String  SERVER_DELETE_PERMIT = "server_delete_permit";
+
     private ArrayList<DepLinesData> dep_lines_data_array  = new ArrayList<>();
     private ArrayList<Integer> permit_array_user_made, permit_array_awaiting;
     private Context context;
 
     private DataParameters dataParameters;
-    private boolean dispather_on;
+    private final HashMap<String, String> departServerHashMap  = new HashMap<>();
+    private final HashMap<String, String> departViewHashMap  = new HashMap<>();
 
     // initiating the objects of Model
-    public ModelMain(Context context, DataParameters dataParameters) {
+    public ModelMain(Context context, DataParameters dataParameters, String [] entries, String [] values) {
         this.context = context;
         this.dataParameters = dataParameters;
-    }
-
-    public void setModelDepLinesDataArray(ArrayList<DepLinesData> dep_lines_data_array) {
-        this.dep_lines_data_array = dep_lines_data_array;
-    }
-
-    public void setDispatcherMode ( boolean dispatcher_on ){
-        this.dispather_on = dispatcher_on;
+        for (int i = 0; i < entries.length; i++) {
+            departServerHashMap.put( entries[i], values[i] );
+            departViewHashMap.put( values[i], entries[i] );
+        }
     }
 
     // get dep_lines_data_array
@@ -38,8 +40,18 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
         return dep_lines_data_array;
     }
 
+    // Convert DepLinesData into Json
+    private String getFromDepLineDataToJson(DepLinesData dep_line_data) {
+        return new Gson().toJson(dep_line_data);
+    }
+
+    // Convert Json  into DepLinesData
+    private DepLinesData getFromJsonToDepLineData(String json_data) {
+        return new Gson().fromJson(json_data, DepLinesData.class);
+    }
+
     // set permit_array for User Made List
-    public void setPermitArrayUserMade(ArrayList<Integer> permit_array_user_made) {
+    private void setPermitArrayUserMade(ArrayList<Integer> permit_array_user_made) {
         this.permit_array_user_made = permit_array_user_made;
     }
 
@@ -49,21 +61,8 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
     }
 
     // set permit_array for User Made List
-    public void setPermitArrayAwaiting(ArrayList<Integer> permit_array_awaiting) {
+    private void setPermitArrayAwaiting(ArrayList<Integer> permit_array_awaiting) {
         this.permit_array_awaiting = permit_array_awaiting;
-    }
-
-    public String getNewPermitNumber() {
-
-        int number;
-        if (dep_lines_data_array.size() == 0) {
-            number = 1;
-        } else {
-            String help_number = dep_lines_data_array.get(dep_lines_data_array.size()-1).getId();
-            number = Integer.parseInt(help_number) + 1;
-        }
-
-        return Integer.toString(number);
     }
 
     // get permit_array for User Made List
@@ -83,23 +82,95 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
                 String message = intent.getStringExtra(MESSAGE);
                 String status = intent.getStringExtra(SENDER);
 
-                if ( status.equals(DATA_IS_NOT_READY) ) {
-                    status = message;
+                switch ( status ) {
+                    // Get Number of Records from Server
+                    case SERVER_GET_NEXT_ID:
+                        // Setup New Depline Data Permit with ID and Department User        *****************************************
+                        DepLinesData dep_line_data = new DepLinesData();
+                        dep_line_data.setId( message );
+                        dep_line_data.setDepartMaster( dataParameters.getModelDepartmentUser() );
 
-                } else  {
-                    if ((message.equals( DATA_WAS_SAVED )) ) {
+                        dataParameters.setStateCode(NEW_PERMIT_CODE);
+                        dataParameters.setDepLineData(dep_line_data);
+
+                        view_listener.OnFinishedGetNumberOfServerRecords();
+
+                        return;
+                    // Get Number of Records from Server
+                    case SERVER_BASE_HAS_BEEN_RELEASED_BY:
+                        // Setup New Depline Data Permit with ID and Department User        *****************************************
+                        view_listener.OnFinishedRefreshViewStatus( status );
+                        view_listener.OnFinishedClearBusyServerStatus();
+                        return;
+
+                    // No Depline Data has got
+                    case DATA_IS_NOT_READY:
+
+                        dep_lines_data_array  = new ArrayList<>();
                         status = message;
 
-                    } else   {
-                        dep_lines_data_array  = new ArrayList<>();
-                        ArrayList<String> array_level_json = new Gson().fromJson(message, ArrayList.class);
-                        for (String item: array_level_json) {
-                            dep_lines_data_array.add(new Gson().fromJson(item, DepLinesData.class));
-                        }
-                    }
+                        main_listener.onFinishedBrUserMadeList(getPermitsUserMadeData());
+                        main_listener.onFinishedBrAwaitingList(getPermitsAwaitingData());
 
-                    main_listener.onFinishedBrUserMadeList(getPermitsUserMadeData());
-                    main_listener.onFinishedBrAwaitingList(getPermitsAwaitingData());
+                        break;
+                    // Got some Depline Data
+                    case DATA_IS_READY:
+                            // Getting Depline Data after Command GET_BY_DEP or GET_ALL
+                            if (!message.equals(DATA_WAS_SAVED)) {
+                                dep_lines_data_array  = new ArrayList<>();
+                                ArrayList<String> array_level_json = new Gson().fromJson(message, ArrayList.class);
+                                for (String item: array_level_json) {
+                                    DepLinesData dld_item = getFromJsonToDepLineData(item); // get original (LATIN) Depline Data
+                                    if (!( null == dld_item)) {
+
+                                        DepLinesData mod_dld_item = getModifiedData(dld_item, departViewHashMap); // convert Depline Data into RUSSIAN one
+                                        dep_lines_data_array.add( mod_dld_item );
+                                        //dep_lines_data_array.add(new Gson().fromJson(item, DepLinesData.class));
+                                    }
+                                }
+
+                            } else {
+                                // Making changes in Dep_Lines_Data_Array after getting command DATA_WAS_SAVED
+                                switch ( dataParameters.getStateCode() ) {
+                                    // Delete Chosen Record from the Array after saving Data in Server Base
+                                    case EDIT_MASTER_PERMIT_CODE:
+
+                                        dep_lines_data_array.remove( dataParameters.getPosition() );
+                                        status = DATA_WAS_DELETED;
+
+                                        break;
+                                    // Add New Record to the Array after saving Data in Server Base
+                                    case NEW_PERMIT_CODE:
+
+                                        dep_lines_data_array.add( dataParameters.getDepLineData() );
+                                        status = DATA_WAS_SAVED;
+
+                                        break;
+                                    // Change Chosen Record in the Array after saving Data in Server Base
+                                    case CHANGE_PERMIT_CODE:
+
+                                        String data_reg_user = dataParameters.getDepLineData().getDateApproveHashmap().get(dataParameters.getModelDepartmentUser());
+
+                                        if (!data_reg_user.equals(Approvement.UN.getValue())) {
+                                            dep_lines_data_array.set(dataParameters.getPosition(), dataParameters.getDepLineData());
+                                            status = DATA_WAS_SAVED;
+                                        }
+                                        break;
+
+                                    default:
+                                        status = message;
+                                        break;
+                                }
+                            }
+
+                            main_listener.onFinishedBrUserMadeList(getPermitsUserMadeData());
+                            main_listener.onFinishedBrAwaitingList(getPermitsAwaitingData());
+
+                        break;
+                    //Config Data has got or confirmation of saving Depline Data to Server
+                    default:
+                            status = message;
+                        break;
                 }
 
                 view_listener.OnFinishedRefreshViewStatus( status );
@@ -117,7 +188,7 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
 
         for (int i = 0; i < dep_lines_data_array.size(); i++) {
             //check if user has created permits
-            if (dispather_on) {
+            if (dataParameters.getDispatcherMode()) {
                 rule = false;
             } else {
                 rule = dep_lines_data_array.get(i).getDepartMaster().equals(dataParameters.getModelDepartmentUser());
@@ -130,7 +201,7 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
                 hashmap.put(FROM[1], dep_lines_data_array.get(i).getPlace());
 
                 hashmap.put(FROM[2], dep_lines_data_array.get(i).getStringDateReg());
-                hashmap.put(FROM[3], dep_lines_data_array.get(i).getPermitApproved());
+                hashmap.put(FROM[3], dep_lines_data_array.get(i).getPermitApproved().getValue());
                 data.add(hashmap);
                 permit_array_user_made.add(i);
             }
@@ -148,10 +219,15 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
 
         for (int i = 0; i < dep_lines_data_array.size(); i++) {
             //check if user has created permits
-            if (dispather_on) {
+            if (dataParameters.getDispatcherMode()) {
                 rule = true;
             } else {
-                rule = dep_lines_data_array.get(i).getHashmapRequired().get(dataParameters.getModelDepartmentUser());
+                rule = false;
+                for (String department: dep_lines_data_array.get(i).getDateApproveHashmap().keySet()) {
+                    if (department.equals(dataParameters.getModelDepartmentUser())) {
+                        rule = true;
+                    }
+                }
             }
 
             if ( rule ) {
@@ -174,17 +250,35 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
     @Override
     public void sendModelDataToServer ( Contract.ViewMainLayout view_listener, String command, String depID, String value) {
 
-        //dep_lines_data_array = new ArrayList<>();
-
         view_listener.OnFinishedButtonSaveSetViewButtonsVisibility(DATA_WAS_NOT_CHANGED);
         view_listener.OnFinishedRefreshViewStatus(DATA_REQUEST_PROCESSING);
         view_listener.OnFinishedSetPermitBlockState( PermitBlock.INVISIBLE );
 
-        getBackWithServer( command, depID, value );
+        String mod_depID = depID;
+        if ( command.equals(SERVER_GET_BY_DEP) ) {
+
+            if (dataParameters.getDispatcherMode()) {
+                command = SERVER_GET_ALL;
+                mod_depID = "";
+            } else {
+                mod_depID = departServerHashMap.get(depID);
+            }
+        }
+
+        if ( command.equals(SERVER_CLEAR_BUSY) ) {
+
+            mod_depID = departServerHashMap.get(depID);
+            if ( null == mod_depID ) {
+                mod_depID = "";
+            }
+        }
+
+        getBackWithServer( command, mod_depID, value );
     }
 
     // Send Data to Server
-    private void getBackWithServer ( String command, String depID, String value ) {
+    @Override
+    public void getBackWithServer ( String command, String depID, String value ) {
         // run task in background
         new Handler().postDelayed(new Runnable() {
             @Override
@@ -203,19 +297,12 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
             @Override
             public void run() {
 
-                DepLinesData dep_line_data = new DepLinesData( getNewPermitNumber(), null, dataParameters.getModelDepartmentUser(),
-                        null, null,true, null,
-                        null, null, null,null);
-
-                dataParameters.setStateCode(NEW_PERMIT_CODE);
-                dataParameters.setDepLineData(dep_line_data);
-
                 //Define List of Required Departments in View Adapter
                 main_listener.OnFinishedButtonNewListDefineListReqDeps();
                 //Show Permit block and Hide Main Block, Show ID number in View
-                main_listener.OnFinishedSetPermitIDtextView(dep_line_data.getId());
+                main_listener.OnFinishedSetPermitIDtextView(dataParameters.getDepLineData().getId());
 
-                main_listener.OnFinishedSetPlaceDateComment("", "", "");
+                main_listener.OnFinishedSetPlaceDateComment("", "", "", "");
                 // Set View Buttons visibility
                 view_listener.OnFinishedButtonSaveSetViewButtonsVisibility( NEW_PERMIT_CODE );
 
@@ -227,28 +314,17 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
 
     @Override
     // method to Update DepLineData Array after Delete
-    public void updateDataArrayAfterDelete (Contract.ViewMainLayout view_listener, int position ) {
+    public void updateDataArrayAfterDelete (Contract.ViewMainLayout view_listener ) {
         // Check if Button Save clicked
                 String code = dataParameters.getStateCode();
 
                 switch ( code ) {
 
-                    case EDIT_PERMIT_CODE:
-
-                        view_listener.OnFinishedButtonSaveSetViewButtonsVisibility( DATA_WAS_DELETED );
-                        view_listener.OnFinishedRefreshViewStatus( DATA_WAS_DELETED );
-
-                        dep_lines_data_array.remove( position );
-
-                        //setModelDepLinesDataArray (dep_lines_data_array);
-                        getBackWithServer ( SERVER_PUT_ALL, "", getDeplineDataArrayJson());
+                    case EDIT_MASTER_PERMIT_CODE:
+                        getBackWithServer ( SERVER_DELETE_PERMIT, dataParameters.getDepLineData().getId(), "");
                         break;
 
                     case NEW_PERMIT_CODE:
-
-                        /* if (dataParameters.getDepLineData().getLinesHashmap() != null) {
-
-                        } */
                         dataParameters.setDepLineData(null);
 
                     // no change was made
@@ -256,7 +332,6 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
                         view_listener.OnFinishedButtonSaveSetViewButtonsVisibility( DATA_WAS_NOT_CHANGED );
                         view_listener.OnFinishedRefreshViewStatus( DATA_WAS_NOT_CHANGED );
                         break;
-
                 }
 
             view_listener.OnFinishedSetPermitBlockState( PermitBlock.INVISIBLE );
@@ -264,61 +339,80 @@ public class ModelMain implements Contract.ModelMain, KM_Constants, Enums {
 
     @Override
     // method to Update DepLineData Array after Save
-    public void updateDataArrayAfterSave (Contract.ViewMainLayout view_listener, int position ) {
+    public void updateDataArrayAfterSave (Contract.ViewMainLayout view_listener ) {
 
         String status = DATA_WAS_NOT_CHANGED;
         view_listener.OnFinishedSetPermitBlockState( PermitBlock.INVISIBLE );
+        DepLinesData dl_data;
 
         switch ( dataParameters.getStateCode() ) {
             // add a new record
             case NEW_PERMIT_CODE:
-
-                dep_lines_data_array.add( dataParameters.getDepLineData() );
-                status = DATA_WAS_SAVED;
+            // Send to Server New Depline Data Permit with ID and Modified Department User        *****************************************
+                dl_data = getModifiedData( dataParameters.getDepLineData(), departServerHashMap );
+                getBackWithServer(SERVER_ADD_PERMIT, "", getFromDepLineDataToJson(dl_data) );
 
                 break;
 
             // change the record
-            case ADD_PERMIT_CODE:
-                // check if the department user has already approved the chosen permit
-                String data_reg_user = dataParameters.getDepLineData().getDateApproveHashmap().get(dataParameters.getModelDepartmentUser());
+            case CHANGE_PERMIT_CODE:
 
-                if (!data_reg_user.equals(Approvement.UNKNOWN.getValue())) {
+                dl_data = getModifiedData(dataParameters.getDepLineData(), departServerHashMap);
+                getBackWithServer(SERVER_CHANGE_PERMIT, dataParameters.getDepLineData().getId(), getFromDepLineDataToJson(dl_data));
 
-                    dep_lines_data_array.set( position, dataParameters.getDepLineData() );
-                    status = DATA_WAS_SAVED;
-                }
                 break;
 
             // no change was made
             case DATA_WAS_NOT_CHANGED:
-            case EDIT_PERMIT_CODE:
+            case EDIT_MASTER_PERMIT_CODE:
             case SHOW_PERMIT_CODE:
             default:
         }
 
         view_listener.OnFinishedButtonSaveSetViewButtonsVisibility( status );
         view_listener.OnFinishedRefreshViewStatus( status );
-
-        // Send Data to server if changes were
-        if (status.equals(DATA_WAS_SAVED)) {
-            //setModelDepLinesDataArray(dep_lines_data_array);
-            getBackWithServer(SERVER_PUT_ALL, "", getDeplineDataArrayJson());
-        }
     }
 
-    // update dep_lines_data_array
-    private String getDeplineDataArrayJson() {
+    private DepLinesData getModifiedData ( DepLinesData dld, HashMap<String, String> departHashMap) {
 
-        ArrayList<String> dld_array_list = new ArrayList<>();
-        for (DepLinesData item: dep_lines_data_array) {
-            String item_json = new Gson().toJson(item);
-            dld_array_list.add(item_json);
+        String mod_dep_user = departHashMap.get(dld.getDepartMaster());
+
+        HashMap<String, Approvement> mod_exist = new HashMap<>();
+        HashMap<String, String> mod_dt_approve = new HashMap<>();
+        HashMap<String, ArrayList<ArrayList<LatLng>> > mod_lines = new HashMap<>();
+
+        for (String key : departHashMap.keySet()) {
+            String mod_key = departHashMap.get(key);
+            String value_dt_approve = dld.getDateApproveHashmap().get(key);
+
+            if (null != value_dt_approve) {
+                mod_exist.put(mod_key, dld.getHashmapCommExist().get(key));
+                mod_dt_approve.put(mod_key, value_dt_approve);
+            }
+
+            ArrayList<ArrayList<LatLng>> value = dld.getLinesHashmap().get(key);
+            if (null != value) {
+                mod_lines.put(mod_key, value);
+            }
         }
 
-        return new Gson().toJson(dld_array_list);
-    }
+        DepLinesData dl_data = new DepLinesData();
 
+        dl_data.setId(dld.getId());
+        dl_data.setStringDateStart(dld.getStringDateStart());
+        dl_data.setStringDateEnd(dld.getStringDateEnd());
+        dl_data.setPlace(dld.getPlace());
+        dl_data.setComment(dld.getComment());
+        dl_data.setStringDateReg(dld.getStringDateReg());
+        dl_data.setPermitState(dld.getPermitState());
+
+        dl_data.setDepartMaster(mod_dep_user);
+        dl_data.setHashmapCommExist(mod_exist);
+        dl_data.setDateApproveHashmap(mod_dt_approve);
+        dl_data.setLinesHashmap(mod_lines);
+
+        return dl_data;
+    }
 }
 
 
