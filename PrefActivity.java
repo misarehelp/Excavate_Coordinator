@@ -4,12 +4,17 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.*;
 import android.os.Bundle;
+import android.view.ViewDebug;
+import android.widget.Toast;
 
 public class PrefActivity extends PreferenceActivity implements KM_Constants {
 
+    public static final int MODE_USER_DEFAULT_POSITION = 0;
     public static final int DEFAULT_DEPARTMENT_POSITION = 0;
     public static final int MAP_TYPE_DEFAULT_POSITION = 1;
-    public static final int MODE_USER_DEFAULT_POSITION = 0;
+    private static final String DEFINED_ADMIN_PASS = "5987";
+    private static final String DEFINED_DISPATCHER_PASS = "3028";
+    private static final String WRONG_PASS = "Для переключения в режим диспетчера/администратора необходимо ввести корректный пароль";
 
 
     private static SharedPreferences sharedPrefs;
@@ -33,11 +38,40 @@ public class PrefActivity extends PreferenceActivity implements KM_Constants {
             super.onCreate(savedInstanceState);
             addPreferencesFromResource(R.xml.pref);
 
-            int admin_pos = getResources().getStringArray(R.array.mode_user_type_entries).length-1;
-            admin_value = getResources().getStringArray(R.array.mode_user_type_entries)[admin_pos];
-            dispatcher_value = getResources().getStringArray(R.array.mode_user_type_entries)[admin_pos-1];
+            String [] mode_user_type = getResources().getStringArray(R.array.mode_user_type_values);
+            int admin_pos = mode_user_type.length-1;
+            admin_value = mode_user_type[admin_pos];
+            dispatcher_value = mode_user_type[admin_pos-1];
+
+            Preference.OnPreferenceChangeListener listener = (preference, object) -> {
+                String new_value = object.toString();
+
+                if ( new_value.equals(admin_value) || new_value.equals(dispatcher_value) ) {
+                    String current_pass = sharedPrefs.getString(ADMIN_PASS, null);
+                    if (current_pass != null && current_pass.equals(getPass(DEFINED_ADMIN_PASS))) {
+                        return true;
+                    } else {
+                        Toast.makeText(getActivity(), WRONG_PASS, Toast.LENGTH_LONG).show();
+                        return false;
+                    }
+                } else {
+                    return true;
+                }
+            };
+
+            ListPreference lp = (ListPreference) findPreference(MODE_USER);
+            lp.setOnPreferenceChangeListener(listener);
 
             initPrefSetup();
+        }
+
+        String getPass (String value) {
+            StringBuilder p = new StringBuilder();
+            char[] old_arr = value.toCharArray();
+            for (int i = 0; i < value.length(); i++ ) {
+                p.append (String.valueOf(10 - Character.getNumericValue(old_arr[i])));
+            }
+            return p.toString();
         }
 
         private void initPrefSetup() {
@@ -47,6 +81,7 @@ public class PrefActivity extends PreferenceActivity implements KM_Constants {
             initListPreference(MODE_USER, MODE_USER_DEFAULT_POSITION);
             updateEditPreference(MAP_SCALE);
             updateEditPreference(RECORDS_MAX_NUMBER);
+            updateEditPreference(ADMIN_PASS);
         }
 
         /* public void initCheckBoxPreference(String key) {
@@ -61,19 +96,21 @@ public class PrefActivity extends PreferenceActivity implements KM_Constants {
             if (lp.getValue() == null) {
                 switch (key) {
                     case DEPARTMENT_USER:
-                        lp.setValue(getResources().getStringArray(R.array.department_entries)[default_pos]);
+                        lp.setValue(getResources().getStringArray(R.array.department_values)[default_pos]);
                         break;
                     case MAP_TYPE:
-                        lp.setValue(getResources().getStringArray(R.array.map_type_entries)[default_pos]);
+                        lp.setValue(getResources().getStringArray(R.array.map_type_values)[default_pos]);
                         break;
                     case MODE_USER:
-                        lp.setValue(getResources().getStringArray(R.array.mode_user_type_entries)[default_pos]);
+                        lp.setValue(getResources().getStringArray(R.array.mode_user_type_values)[default_pos]);
                         break;
                 }
             //
             }
+
             updateUserListPreference(key);
         }
+
 
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
@@ -88,6 +125,9 @@ public class PrefActivity extends PreferenceActivity implements KM_Constants {
                 case RECORDS_MAX_NUMBER:
                 case MAP_SCALE:
                     updateEditPreference(key);
+                    break;
+                case ADMIN_PASS:
+                        updateEditPreference(key);
                     break;
             }
         }
@@ -120,6 +160,8 @@ public class PrefActivity extends PreferenceActivity implements KM_Constants {
         private void updateUserListPreference(String key) {
             ListPreference preference = (ListPreference) findPreference(key);
             String value = preference.getValue();
+            CharSequence entry = preference.getEntry();
+
             if (key.equals(MODE_USER)) {
                 PreferenceScreen preference_server_setup = (PreferenceScreen) findPreference("server_setup");
                 ListPreference preference_user = (ListPreference) findPreference(DEPARTMENT_USER);
@@ -134,20 +176,29 @@ public class PrefActivity extends PreferenceActivity implements KM_Constants {
                     preference_server_setup.setEnabled(false);
                     preference_user.setEnabled(false);
 
-                } else {    // just some user
+                } else {    // just some other user
 
                     preference_server_setup.setEnabled(false);
                     preference_user.setEnabled(true);
                 }
             }
-            preference.setSummary(value);
-            storeSharedPreferenceValue(key, value);
+
+            if (key.equals(MAP_TYPE)) {
+                storeSharedPreferenceValue(key, value);
+            } else {
+                storeSharedPreferenceValue(key, entry.toString());
+            }
+            preference.setSummary(entry);
         }
 
         private void updateEditPreference(String key) {
             EditTextPreference preference = (EditTextPreference) findPreference(key);
             String value = preference.getText();
-            preference.setSummary(value);
+            if (key.equals(ADMIN_PASS)) {
+                preference.setSummary("******");
+            } else {
+                preference.setSummary(value);
+            }
             storeSharedPreferenceValue(key, value);
         }
 

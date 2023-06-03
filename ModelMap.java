@@ -53,9 +53,7 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
                 marker_code = START_LINE_CODE;
 
                 listener.OnFinishedSetUpButtonsAppearance(state_code);
-
                 listener.OnFinishedSetUser(department_user);
-
                 listener.OnFinishedDrawLegend( department_array, color_depart, getColorBackground(department_array));
 
             }
@@ -228,9 +226,7 @@ public class ModelMap implements Contract.ModelMap,  KM_Constants, Enums  {
     public void doButtonCheckNoLinesLogic( Contract.ModelMap.CallbackOnMapReady map_listener ) {
 
         DepLinesData dep_line_data = getCommAndDateAproveSet( dataParameters.getDepLineData(), dataParameters.getStateCode(), Approvement.NO );
-
         dataParameters.setDepLineData(dep_line_data);
-
         map_listener.OnCloseMapsListenerns();
     }
 

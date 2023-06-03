@@ -5,19 +5,12 @@ import android.widget.*;
 import androidx.fragment.app.FragmentActivity;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.graphics.Typeface;
-import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -25,16 +18,12 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, KM_Constants, Enums, Contract.ViewMap {
     //public static final String NO_LINES_SET ="Нет отмеченных коммуникаций";
     public static final String CHECK_NO_COMMUNICATIONS =" , либо обозначьте отсутствие коммуникаций";
     public static final int ZOOM_NEW = 10;
     public static final int ZOOM_BASE = 17;
-    public static final int LINE_WIDTH_MASTER = 12;
+    public static final int LINE_WIDTH_MASTER = 15;
     public static final int LINE_WIDTH_USER = 6;
 
     Contract.PresenterMaps presenterMaps;
@@ -88,6 +77,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (Build.VERSION.SDK_INT > 20) {
             int m_type = Integer.parseInt(sharedPrefs.getString(MAP_TYPE, "2"));
             mMap.setMapType(m_type);
+            mMap.setIndoorEnabled(false);
         } else mMap.setMapType(4);
 
         mMap.setMyLocationEnabled(true);
@@ -203,8 +193,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void addColorRowToLegend(String[] depart, int [] color_text, int [] color_bg){
-        int DEPART_ROWS = 5;
-        int DEPART_COLUMNS = 2;
+        int DEPART_ROWS = 3;
+        int DEPART_COLUMNS = 3;
         String line = "-------- ";
         int k = 0;
 
@@ -220,11 +210,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             for (int j = 0; j < DEPART_ROWS; j++) {
                 //ImageView imageView = new ImageView(this);
                 //imageView.setImageResource(R.drawable.book);
-                if ( k < DEPART_ROWS * DEPART_COLUMNS - 1 ) {
+                if ( k < DEPART_ROWS * DEPART_COLUMNS ) {
                     String s = line + depart[k];
                     TextView textView = new TextView(this);
                     textView.setText(s);
-                    textView.setTextSize(10);
+                    textView.setTextSize(12);
                     textView.setTextColor(color_text[k]);
                     textView.setBackgroundColor( color_bg[k]);
                     textView.setPadding(2, 0, 2, 1);

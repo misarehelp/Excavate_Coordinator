@@ -25,11 +25,15 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
         dataParameters = DataParameters.getInstance();
         dataParameters.setStateCode(DATA_WAS_NOT_CHANGED);
         dataParameters.setMapIsDone(false);
+        String [] entriesArray = mainView.getDepartmentEntriesArray();
+        if ( null == dataParameters.getModelDepartmentUser()) {
+            dataParameters.setModelDepartmentUser(entriesArray[0]);
+        }
 
         this.mainView = mainView;
 
-        modelMain = new ModelMain(context, dataParameters, mainView.getDepartmentEntriesArray(), mainView.getDepartmentValuesArray());
-        modelPermit =  new ModelPermit(dataParameters, mainView.getDepartmentEntriesArray().length);
+        modelMain = new ModelMain(context, dataParameters, entriesArray, mainView.getDepartmentValuesArray());
+        modelPermit =  new ModelPermit(dataParameters, entriesArray.length);
     }
 
     // ************* start methods passed from View to ModelMain *******************
@@ -121,6 +125,12 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
     // operations to be performed - on Menu item "Clear ID counter" click
     public void onClearIdCounterClick() {
         modelMain.sendModelDataToServer ( this, SERVER_CLEAR_START_ID, "", "" );
+    }
+
+    @Override
+    // operations to be performed - on Menu item "Clear ID counter" click
+    public void onDeleteAllPermitsClick() {
+        modelMain.sendModelDataToServer ( this, SERVER_DELETE_ALL, "", "" );
     }
 
     @Override

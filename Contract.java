@@ -283,6 +283,9 @@ public interface Contract {
         // on Menu item "Clear ID counter" click
         void onClearIdCounterClick();
 
+        // on Menu item "Delete all permits" click
+        void onDeleteAllPermitsClick();
+
         // on Button Save Click
         void onButtonExitClick();
 

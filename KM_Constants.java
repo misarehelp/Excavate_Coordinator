@@ -37,7 +37,7 @@ interface KM_Constants  {
     String SERVER_GET_ALL = "server_get_all";
     String SERVER_GET_ARCHIVE = "server_get_archive";
     String SERVER_GET_BY_DEP = "server_get_by_dep";
-    //String SERVER_PUT_ALL = "server_put_all";
+    String SERVER_DELETE_ALL = "server_delete_all";
     String SERVER_GET_NEXT_ID  = "server_get_next_id";
     String SERVER_CLEAR_BUSY = "server_clear_busy";
     String SERVER_CLEAR_START_ID = "server_clear_start_id";
@@ -50,6 +50,7 @@ interface KM_Constants  {
     String MAP_TYPE = "map_type";
     String MAP_SCALE = "map_scale";
     String RECORDS_MAX_NUMBER = "records_max_number";
+    String ADMIN_PASS = "admin_pass";
     String URL_ADDR = "https://volganap.ru/excavate_coordinator/index_ec.php";
     String CONFIRM_CONNECTION = "Обратная связь получена!: ";
 }

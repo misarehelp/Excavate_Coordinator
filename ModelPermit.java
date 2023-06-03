@@ -23,7 +23,6 @@ public class ModelPermit implements Contract.ModelPermit,  KM_Constants, Enums {
         this.dataParameters = dataParameters;
         this.length = length;
         dataParameters.setStateCode(DATA_WAS_NOT_CHANGED);
-        //required_array = new boolean[ length ];
     }
 
     //set  Model Permit Place Date Comment

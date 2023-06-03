@@ -120,7 +120,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
     private void initSharedPreferences() {
         sharedPrefs = getSharedPreferences(PREF_ACTIVITY, MODE_PRIVATE);
 
-
         prefChangeListener = (sharedPreferences, key) -> {
             Log.d(LOG_TAG, "Main - prefChangeListener triggered on: " +key);
 
@@ -157,18 +156,24 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
 
     @Override
     public String getViewModeUser(){
-        return sharedPrefs.getString(MODE_USER, getDispatcherDefault());
+        //return sharedPrefs.getString(MODE_USER, getDispatcherDefault());
+        return sharedPrefs.getString(MODE_USER, getDepartmentEntriesArray()[0]);
     }
 
     @Override
     public String getDispatcherDefault(){
-        return  getResources().getStringArray(R.array.mode_user_type_entries)[1];
+        return  getResources().getStringArray(R.array.mode_user_type_values)[1];
     }
 
     @Override
     public String getMaxRecordsNumber(){
         return sharedPrefs.getString(RECORDS_MAX_NUMBER, DEFAULT_MAX_RECORDS);
     }
+
+    /*
+    public String getAdminPass(){
+        return sharedPrefs.getString(ADMIN_PASS, null);
+    } */
 
     @Override
     public void setViewDepartmentUser(String department_user) {
@@ -455,48 +460,45 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onPrepareOptionsMenu (Menu menu) {
 
-        String admin = getResources().getStringArray(R.array.mode_user_type_entries)[2];
-        String dispatcher = getResources().getStringArray(R.array.mode_user_type_entries)[1];
+        String admin = getResources().getStringArray(R.array.mode_user_type_values)[2];
+        String dispatcher = getResources().getStringArray(R.array.mode_user_type_values)[1];
         boolean is_admin = admin.equals(getViewModeUser());
         boolean is_disp = dispatcher.equals(getViewModeUser());
+        boolean cond = is_admin || is_disp;
+        // allow additional options of Menu
+        menu.findItem(R.id.serv_config_item).setEnabled(cond);
+        menu.findItem(R.id.show_archive).setEnabled(cond);
+        menu.findItem(R.id.clear_id_counter).setEnabled(cond);
+        menu.findItem(R.id.delete_all_permits).setEnabled(cond);
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
 
         switch (item.getItemId()) {
 
             case R.id.set_item:
-
                 startActivity(new Intent(this, PrefActivity.class));
                 break;
 
             case R.id.serv_config_item:
-
-                if ( is_admin ) {
-                    presenterMain.onChangeServerPreferences(getMaxRecordsNumber());
-
-                } else {
-                    Toast.makeText(this, getResources().getString(R.string.server_config_unavailable), Toast.LENGTH_LONG).show();
-                }
+                presenterMain.onChangeServerPreferences(getMaxRecordsNumber());
                 break;
 
             case R.id.show_archive:
-
-                if ( is_disp ) {
-                    presenterMain.onShowArchiveClick();
-
-                } else {
-                    Toast.makeText(this, getResources().getString(R.string.server_config_unavailable), Toast.LENGTH_LONG).show();
-                }
+                presenterMain.onShowArchiveClick();
                 break;
 
             case R.id.clear_id_counter:
+                presenterMain.onClearIdCounterClick();
+                break;
 
-                if ( is_admin || is_disp ) {
-                    presenterMain.onClearIdCounterClick();
-
-                } else {
-                    Toast.makeText(this, getResources().getString(R.string.server_config_unavailable), Toast.LENGTH_LONG).show();
-                }
+            case R.id.delete_all_permits:
+                presenterMain.onDeleteAllPermitsClick();
                 break;
 
             case R.id.version:
