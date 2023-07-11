@@ -1,16 +1,24 @@
 package ru.volganap.nikolay.haircut_schedule;
 
 import android.Manifest;
+import android.app.DatePickerDialog;
 import android.app.FragmentManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.viewpager.widget.ViewPager;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
 
 import android.graphics.Color;
 import android.os.Bundle;
@@ -22,18 +30,28 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
+
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
-public class MainActivity extends AppCompatActivity implements KM_Constants, Enums, Contract.ViewMain, Contract.ActivityReciever {
+public class MainActivity extends AppCompatActivity implements KM_Constants, Enums, Contract.ViewMain, Contract.ActivityReciever,
+        MainFragmentInterface, DatePickerDialog.OnDateSetListener {
 
     private static final String DEFAULT_MAX_RECORDS = "25";
 
@@ -41,20 +59,20 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
     private SharedPreferences.OnSharedPreferenceChangeListener prefChangeListener;
 
     // Main activity layout
-    //private EditText et_permit_place, et_permit_date_start, et_permit_date_end, et_permit_comment;
-    private Button bt_prev_day, bt_next_day, bt_add_rec, bt_add_client, bt_exit, bt_show_clients;
-    private ListView lv_records_list;
-
-    //LinearLayout ll_permit_data;
-    //ViewGroup.LayoutParams params;
-
+    private Button bt_prev_week, bt_next_week, bt_add_rec, bt_add_client, bt_exit, bt_show_clients;
+    private TextView tv_date;
     private BroadcastReceiver mainBroadcastReceiver;
     Contract.PresenterMain presenterMain;
+
+    private ArrayList<String> d_interval;
+    private ArrayList<String> d_of_week ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        tv_date = findViewById(R.id.tv_date);
+
         Log.d(LOG_TAG, "Main - onCreate ");
         // Init Main activity layout
         initMainViewLayout();
@@ -64,29 +82,18 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
         initSharedPreferences();
         // Init BroadcastReceiver
         initBroadcastReceiver();
-        //load new Record Data Fragment
-        //loadFragment(RecordDataFragment.newInstance(5, "my title"));
+
     }
 
     private void initMainViewLayout() {
         // Main ViewLayout
-        bt_prev_day = findViewById(R.id.bt_prev_day);
-        bt_next_day = findViewById(R.id.bt_next_day);
+        bt_prev_week = findViewById(R.id.bt_prev_week);
+        bt_next_week = findViewById(R.id.bt_next_week);
         bt_add_rec = findViewById(R.id.bt_add_rec);
         bt_add_client = findViewById(R.id.bt_add_client);
         bt_exit = findViewById(R.id.bt_exit);
         bt_show_clients = findViewById(R.id.bt_show_clients);
 
-        lv_records_list = findViewById(R.id.lv_records_list);
-        lv_records_list.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-
-
-        /*et_permit_place = findViewById(R.id.et_permit_place);
-        et_permit_date_start = findViewById(R.id.et_permit_date_start);
-        et_permit_date_end = findViewById(R.id.et_permit_date_end);
-        et_permit_comment = findViewById(R.id.et_permit_comment); */
-
-        //ll_permit_data = findViewById(R.id.ll_permit_data);
     }
 
     private void initSharedPreferences() {
@@ -129,59 +136,106 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
         // Set visibility and onclick method of buttons
         buttonsSetOnClickListener();
     }
-/*
-    private void loadFragment(Fragment fragment) {
-        // create a FragmentManager
-        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        // Replace the contents of the container with the new fragment
-        ft.replace(R.id.main_placeholder, fragment);
-        // or ft.add(R.id.your_placeholder, new FooFragment());
-        ft.commit();
-    } */
 
-    // Set date on main activity
-    @Override
-    public void setViewDate(String date) {
-        ((TextView)findViewById(R.id.tv_date)).setText(date);
+    private void showTvDate(String date) {
+        tv_date.setText(date);
     }
 
     // Fill In Permits User Made List
     @Override
-    public void fillInRecordsList(ArrayList<Map<String, String>> data) {
+    public void fillInRecordsList(ArrayList<ArrayList<Map<String, String>>> new_data, ArrayList<String> days_interval, ArrayList<String> days_of_week) {
 
-        int[] to = { R.id.li_rec_time, R.id.li_rec_job, R.id.li_rec_name, R.id.li_rec_comment };
+        d_interval = days_interval;
+        d_of_week = days_of_week;
 
-        SimpleAdapter adapter = new SimpleAdapter(this, data, R.layout.main_list_item_1, FROM, to);
-        setAdapterAndItemClickListener(adapter, R.id.lv_records_list);
-    }
+        ViewPager2 vpPager = findViewById(R.id.vpPager);
+        MainPagerAdapter fragmentStateAdapter = new MainPagerAdapter(this, getLifecycle(),this);
 
-    private void setAdapterAndItemClickListener(SimpleAdapter adapter, int lv_id) {
-        ListView lv = findViewById(lv_id);
-        lv.setAdapter(adapter);
-        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        for (int i = 0; i < d_interval.size(); i++) {
+            if (new_data.get(i).size() == 0) {
+                //fragmentStateAdapter.addFragment(EmptyFragment.newInstance(), days_interval.get(i));
+                fragmentStateAdapter.addFragment(EmptyFragment.newInstance());
+            } else {
+                //fragmentStateAdapter.addFragment(new MainFragment(new_data.get(i)), days_interval.get(i));
+                fragmentStateAdapter.addFragment(new MainFragment(new_data.get(i)));
+            }
+        }
+
+        vpPager.setAdapter(fragmentStateAdapter);
+        vpPager.setOffscreenPageLimit(2);
+
+        TabLayout tabLayout = findViewById(R.id.tabLayout);
+        new TabLayoutMediator(tabLayout, vpPager, false, (tab, position) -> {
+
+            if (position == 0) {
+                tab.view.setBackgroundColor(Color.WHITE);
+            } else {
+                tab.view.setBackgroundColor(Color.GREEN);
+            }
+             if (d_of_week == null || d_of_week.size() == 0) {
+                tab.setText("n/d");
+                showTvDate("n/d");
+            } else {
+                tab.setText(d_of_week.get(position));
+            }
+
+        }).attach();
+
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+            public void onTabSelected(TabLayout.Tab tab) {
 
-                presenterMain.onMainListViewItemClick( position, lv_id, R.id.lv_records_list );
+                int pos = tab.getPosition();
+                if (d_of_week != null && d_of_week.size() != 0) {
+
+                    tab.view.setBackgroundColor(Color.WHITE);
+                    tab.setText(d_of_week.get(pos));
+                    showTvDate(d_interval.get(pos));
+                }
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+                tab.view.setBackgroundColor(Color.GREEN);
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
             }
         });
+
+        TabLayout.Tab tab = tabLayout.getTabAt(0);
+        tab.select();
+        showTvDate(d_interval.get(0));
+
+        Log.d(LOG_TAG, "Main - fillInRecordsList - after");
+        /* mainVp2Adapter.setValues(new_data);
+        vpPager.setCurrentItem(0);
+        mainVp2Adapter.notifyDataSetChanged(); */
+        //mainVp2Adapter.notifyItemChanged(0);
+    }
+
+    @Override
+    public void getDatafromMainFragment( int value) {
+        presenterMain.onMainListViewItemClick( value );
     }
 
     private void buttonsSetOnClickListener() {
 
         // show previous day record
-        bt_prev_day.setOnClickListener(v -> {
-            presenterMain.onButtonPreviousDayClick();
+        bt_prev_week.setOnClickListener(v -> {
+            presenterMain.onButtonPreviousWeekClick();
         });
 
         // show next day record
-        bt_next_day.setOnClickListener(v -> {
-            presenterMain.onButtonNextDayClick();
+        bt_next_week.setOnClickListener(v -> {
+            presenterMain.onButtonNextWeekClick();
         });
 
         // add a record
         bt_add_rec.setOnClickListener(v -> {
-            presenterMain.onButtonAddRecordClick();
+            presenterMain.onButtonAddRecordClick(tv_date.getText().toString());
         });
 
         // add a client
@@ -198,6 +252,23 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
         bt_show_clients.setOnClickListener(v -> {
             presenterMain.onButtonShowClientsClick();
         });
+
+        // Show DatePicker dialog
+        tv_date.setOnClickListener(v -> {
+
+            Calendar calendar = Calendar.getInstance(TimeZone.getDefault());
+
+            DatePickerDialog dialog = new DatePickerDialog( this, this, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH));
+            dialog.show();
+
+        });
+    }
+
+    @Override
+    public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+
+        presenterMain.onTextViewDateClick( year, monthOfYear, dayOfMonth);
     }
 
     @Override
@@ -206,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
         switch (permit_code) {
             case ADD_CODE:
 
-                bt_next_day.setVisibility(View.GONE);
+                bt_next_week.setVisibility(View.GONE);
                 bt_add_rec.setVisibility(View.GONE);
                 bt_add_client.setVisibility(View.VISIBLE);
                 bt_show_clients.setVisibility(View.INVISIBLE);
@@ -215,7 +286,7 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
 
             case CHANGE_CODE:
 
-                bt_next_day.setVisibility(View.GONE);
+                bt_next_week.setVisibility(View.GONE);
                 bt_add_rec.setVisibility(View.GONE);
                 bt_add_client.setVisibility(View.VISIBLE);
                 bt_show_clients.setVisibility(View.INVISIBLE);
@@ -228,7 +299,7 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
             case DATA_WAS_SAVED:
             case DATA_WAS_DELETED:
             default:
-                bt_next_day.setVisibility(View.VISIBLE);
+                bt_next_week.setVisibility(View.VISIBLE);
                 bt_add_rec.setVisibility(View.VISIBLE);
                 bt_add_client.setVisibility(View.VISIBLE);
                 bt_show_clients.setVisibility(View.VISIBLE);
@@ -278,10 +349,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
                 presenterMain.onShowArchiveClick();
                 break;
 
-            case R.id.clear_id_counter:
-                presenterMain.onClearIdCounterClick();
-                break;
-
             case R.id.version:
                 Toast.makeText(this, getResources().getString(R.string.version), Toast.LENGTH_LONG).show();
                 break;
@@ -302,6 +369,21 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
     @Override
     public String getMaxRecordsNumber(){
         return sharedPrefs.getString(RECORDS_MAX_NUMBER, DEFAULT_MAX_RECORDS);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        presenterMain.onMainActivityResume();
+        Log.d(LOG_TAG, "MainActivity: onResume ");
+    }
+
+    @Override
+    public void onDestroy() {
+        unregisterReceiver(mainBroadcastReceiver);
+        Log.d(LOG_TAG, "MainActivity: onDestroy ");
+        super.onDestroy();
+        presenterMain.onDestroy();
     }
 
     /*@Override
@@ -445,21 +527,6 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
             }
         });
     }*/
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        presenterMain.onMainActivityResume();
-        Log.d(LOG_TAG, "MainActivity: onResume ");
-    }
-
-    @Override
-    public void onDestroy() {
-        unregisterReceiver(mainBroadcastReceiver);
-        Log.d(LOG_TAG, "MainActivity: onDestroy ");
-        super.onDestroy();
-        presenterMain.onDestroy();
-    }
 }
 
 // a change for a depricated onActivityResult()
@@ -474,3 +541,139 @@ public class MainActivity extends AppCompatActivity implements KM_Constants, Enu
             }); */
 
 //private String code_after_map = DATA_WAS_NOT_CHANGED;
+
+/* <LinearLayout
+        android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_gravity="center">
+<TextView
+            android:id="@+id/courseName"
+                    android:text="courseName"
+                    android:textStyle="bold"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+</LinearLayout> */
+
+//TabLayout tabLayout = findViewById(R.id.tabLayout);
+//vpPager = findViewById(R.id.vpPager);
+//
+//
+        /*
+        ArrayList<ArrayList<Map<String, String>>> data = new ArrayList<> ();
+        ArrayList<Map<String, String>> day_data = new ArrayList<>();
+        day_data.add(new HashMap<>());
+        data.add(day_data);
+        mainVp2Adapter = new MainVp2Adapter(this, data);
+        vpPager.setAdapter(mainVp2Adapter); */
+
+//vpPager.setClipToPadding(false);
+//vpPager.setPadding(40, 0, 70, 0);
+//vpPager.setPageMargin(20);
+
+		/* TabLayoutMediator tabLayoutMediator = new TabLayoutMediator(tabLayout, viewPager, true, new TabLayoutMediator.TabConfigurationStrategy()
+		{
+			@Override
+			public void onConfigureTab(@NonNull TabLayout.Tab tab, int position)
+			{
+				// When a tab is created this is called, then we can set tab properties, in this case the text
+				tab.setText(mainToolsAdapter.getItemTitle(position));
+			}
+		});
+		tabLayoutMediator.attach(); */
+
+
+       /* new TabLayoutMediator(tabLayout, vpPager, new TabLayoutMediator.TabConfigurationStrategy() {
+            @Override
+            public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
+
+                if (days_of_week == null || days_of_week.size() == 0) {
+                    //tab.setText("no date");
+                    //showTvDate("no date");
+                } else {
+                    //tab.setText(days_of_week.get(position));
+                    //showTvDate(days_interval.get(position));
+                }
+            }
+        }).attach();
+
+        new TabLayoutMediator(tabLayout, vpPager, (tab, position) -> {
+
+            tab.view.setBackgroundColor(Color.CYAN);
+            if (days_of_week == null || days_of_week.size() == 0) {
+                tab.setText("n/d");
+                showTvDate("n/d");
+            } else {
+                tab.setText(days_of_week.get(position));
+                showTvDate(days_interval.get(position));
+            }
+
+        }).attach();
+
+
+
+         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+
+                int pos = tab.getPosition();
+                Log.d(LOG_TAG, "Main_TabSelectedListener, position: " + pos );
+                if (days_of_week == null || days_of_week.size() == 0) {
+                    tab.view.setBackgroundColor(Color.RED);
+                    tab.setText("n/d");
+                    showTvDate("n/d");
+                } else {
+
+                    //vpPager.setCurrentItem(pos);
+                    //mainVp2Adapter.notifyDataSetChanged();
+                    //mainVp2Adapter.notifyItemChanged(pos);
+
+                    tab.view.setBackgroundColor(Color.WHITE);
+                    tab.setText(days_of_week.get(pos));
+                    showTvDate(days_interval.get(pos));
+                }
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+                tab.view.setBackgroundColor(Color.CYAN);
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        }); */
+
+        /* vpPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            // This method is triggered when there is any scrolling activity for the current page
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                super.onPageScrolled(position, positionOffset, positionOffsetPixels);
+                //Log.d(LOG_TAG, "Main_onPageScrolled: " + String.valueOf(position));
+            }
+
+            // triggered when you select a new page
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+
+                if (days_of_week == null || days_of_week.size() == 0) {
+                    showTvDate("no date");
+                } else {
+                    showTvDate(days_interval.get(position));
+                }
+                Log.d(LOG_TAG, "Main_onPageSelected: " + String.valueOf(position));
+            }
+
+            // triggered when there is
+            // scroll state will be changed
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                super.onPageScrollStateChanged(state);
+                //Log.d(LOG_TAG, "Main_onPageScrollStateChanged: " + String.valueOf(state));
+            }
+        }); */
+
+//FragmentStateAdapter pagerAdapter = new MainPagerAdapter(this);
+//vpPager.setAdapter(pagerAdapter);

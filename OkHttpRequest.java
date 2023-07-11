@@ -19,7 +19,7 @@ public class OkHttpRequest implements KM_Constants, Enums{
 
     public void serverGetback(Context context, String command, String dateID, String data) {
         OkHttpClient client = new OkHttpClient();
-        //Log.d(LOG_TAG, "OkHttpRequest. Command is:" + command + ";  Data: " + data);
+        Log.d(LOG_TAG, "OkHttpRequest. Command is:" + command + ";  Data: " + data);
         RequestBody formBody = new FormBody.Builder()
                 .add("command", command)
                 .add("dateID", dateID)

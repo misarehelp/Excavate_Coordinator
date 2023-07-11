@@ -15,7 +15,7 @@ public interface Contract {
 
     interface ViewMain {
         // fill in Records List
-        void fillInRecordsList( ArrayList<Map<String, String>> data );
+        void fillInRecordsList( ArrayList<ArrayList<Map<String, String>>> data, ArrayList<String> days_interval, ArrayList<String> day_of_week );
         // refresh Main Status
         void refreshMainStatus( String status );
         // Set Permit Fields Visibility for View
@@ -23,7 +23,7 @@ public interface Contract {
         // Show Toast for View
         void showToast (String value);
         // set View value of current Date
-        void setViewDate( String date );
+        //void setViewDate( ArrayList<String> days_interval );
         // get Max Records Number()
         String getMaxRecordsNumber();
 
@@ -55,13 +55,13 @@ public interface Contract {
         void onBroadcastReceive(Intent intent);
 
         // method to be called when the Previous Next is clicked
-        void onButtonPreviousDayClick();
+        void onButtonPreviousWeekClick();
 
         // method to be called when the Button Next is clicked
-        void onButtonNextDayClick();
+        void onButtonNextWeekClick();
 
         // method to be called when the Button 'Add a record' is clicked
-        void onButtonAddRecordClick();
+        void onButtonAddRecordClick(String date);
 
         // method to be called when the Button 'Add a client' is clicked
         void onButtonAddClientClick();
@@ -72,15 +72,14 @@ public interface Contract {
         // method to be called when the Button 'Show clients' is clicked
         void onButtonShowClientsClick();
 
+        // method to be called when the Button 'Show clients' is clicked
+        void onTextViewDateClick( int year, int monthOfYear, int dayOfMonth );
+
         // method to be called when Main ListView item is clicked
-        void onMainListViewItemClick( int position, int id, int viewItew);
+        void onMainListViewItemClick( int position);
 
         // on Menu item "Show Archive" click
         void onShowArchiveClick();
-
-        // on Menu item "Clear ID counter" click
-        void onClearIdCounterClick();
-
 
         void onMainActivityResume();
 
@@ -94,16 +93,18 @@ public interface Contract {
         interface OnPresenterMainCallBack {
             //interface OnFinishedSetMainViewLayout {
             // function to be called   once the Handler of Model class completes its execution
-            void onFinishedBrUserMadeList(ArrayList<Map<String, String>> data);
-            void onFinishedGetDate(String date);
+            void onFinishedBrUserMadeList(ListViewData listViewData);
+            //void onFinishedGetDate(ArrayList<String> days_interval);
+            void onFinishedGetServerData();
         }
 
-        void getDateFromModelMain ( Contract.ModelMain.OnPresenterMainCallBack main_listener, int value );
+        void getDateFromModelMain ( Contract.ModelMain.OnPresenterMainCallBack main_listener, int value, int year, int monthOfYear, int dayOfMonth );
 
-        void getFromModelBroadcastReceiver( Contract.ModelMain.OnPresenterMainCallBack main_listener,
-                                        Contract.ViewMainLayout view_listener, Intent intent );
+        //void getDatePickerModelMain ( Contract.ModelMain.OnPresenterMainCallBack main_listener, int year, int monthOfYear, int dayOfMonth );
 
-        void sendModelDataToServer ( Contract.ViewMainLayout view_listener, String command, String dateID, String value);
+        void getFromModelBroadcastReceiver( Contract.ModelMain.OnPresenterMainCallBack main_listener, Contract.ViewMainLayout view_listener, Intent intent );
+
+        void sendModelDataToServer (  Contract.ViewMainLayout view_listener, String command, String dateID, String value);
 
         //void setModelMainButtonNewClick( Contract.ModelPermit.OnFinishedSetMainViewLayout main_listener, Contract.ViewMainLayout view_listener );
     }

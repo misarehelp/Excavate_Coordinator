@@ -20,25 +20,4 @@ public interface Enums {
         }
     }
 
-    enum PermitBlock {
-        VISIBLE,
-        INVISIBLE;
-    }
-
-    enum PermitState {
-        OP ("откр."),
-        AP ("согл."),
-        CL ("закр.");
-
-        private final String value;
-
-        PermitState(String value) {
-            this.value = value;
-        }
-
-        String getValue() {
-            return value;
-        }
-
-    }
 }

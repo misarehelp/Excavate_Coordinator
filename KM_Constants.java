@@ -2,10 +2,12 @@ package ru.volganap.nikolay.haircut_schedule;
 
 interface KM_Constants  {
     String LOG_TAG = "myLogs";
-    String[] FROM = {"0", "1", "2", "3"};
+    String[] FROM = {"0", "1", "2", "3", "4"};
+    String[] WEEKDAYS = {"Вск", "Пон", "Втр", "Срд", "Чтв", "Птн", "Сбт"};
+    int PERIOD = 7;
 
     String MODE_USER = "mode_user";
-    String DEPARTMENT_USER = "department_user";
+    String DEPARTMENT_USER = "dep_user";
     String SENDER = "sender";
     String MESSAGE = "message";
 

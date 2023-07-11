@@ -1,15 +1,19 @@
 package ru.volganap.nikolay.haircut_schedule;
 
-import java.util.Date;
 
 public class RecordData {
    private String id, name, phone, date, time, duration, job, price, comment;
    private boolean pic_bef, pic_aft, pic_wish, remind;
 
+   private transient String index;
+
    public RecordData() {
    }
 
    //getters
+   String getIndex() {
+      return index;
+   }
    String getId() {return id;}
    String getName() {return name;}
    String getPhone() {return phone;}
@@ -47,6 +51,9 @@ public class RecordData {
    }
 
    //setters
+   void setIndex (String index) {
+      this.index = index;
+   }
    void setId( String id) {this.id = id;}
    void setName( String name) {this.name = name;}
    void setPhone( String phone) {this.phone = phone;}
