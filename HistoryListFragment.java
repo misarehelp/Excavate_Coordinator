@@ -39,7 +39,7 @@ public class HistoryListFragment extends Fragment implements Constants, Enums, C
          callbackToRecordFragment = (Contract.SomeFragmentToRecordActivity) context;
 
       } catch (ClassCastException e) {
-         throw new ClassCastException(context.toString() + " must implement Contract.RecordFragmentToRecordActivity");
+         throw new ClassCastException(context + " must implement Contract.RecordFragmentToRecordActivity");
       }
    }
 

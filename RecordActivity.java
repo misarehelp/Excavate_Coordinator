@@ -175,6 +175,7 @@ public class RecordActivity extends AppCompatActivity implements Constants, Enum
         callbackToRecordFragment.onPhotoFragmentViewCreatedToRecord();
     }
 
+    /*
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -191,6 +192,7 @@ public class RecordActivity extends AppCompatActivity implements Constants, Enum
             }
         }
     }
+    */
 
     private void initRecordViewPager( String index, String date, String time, String type ) {
 

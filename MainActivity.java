@@ -53,7 +53,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     private int current_page = 0;
     private int theme_type;
     private boolean future_recs = true;
-    //private int MY_PERMISSIONS_REQUEST_CAMERA = 2323;
     int[] sor;
 
     @Override

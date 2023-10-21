@@ -76,48 +76,43 @@ class ClientRecycleAdapter extends RecyclerView.Adapter<ClientRecycleAdapter.Vie
          tv_phone = view.findViewById(R.id.et_phone);
          tv_comment = view.findViewById(R.id.et_comment);
 
-         view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-               position = getAdapterPosition();
-               ClientData clientData = data.get(position);
-            //Creating the instance of PopupMenu for New Haircut record or Note record
-               PopupMenu popup = new PopupMenu(context, parent);
-               //Inflating the Popup using xml file
-               popup.getMenuInflater().inflate(R.menu.client_list_menu, popup.getMenu());
+         view.setOnClickListener(v -> {
+            position = getAdapterPosition();
+            ClientData clientData = data.get(position);
+         //Creating the instance of PopupMenu for New Haircut record or Note record
+            PopupMenu popup = new PopupMenu(context, parent);
+            //Inflating the Popup using xml file
+            popup.getMenuInflater().inflate(R.menu.client_list_menu, popup.getMenu());
 
-               //registering popup with OnMenuItemClickListener
-               popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                  public boolean onMenuItemClick(MenuItem item) {
-                     switch (item.getItemId()) {
-                        case R.id.menu_add_client_to_record:
-                           clickListener.onItemClick( position, GET_CLIENT_DATA_FROM_BASE, clientData );
-                           break;
+            //registering popup with OnMenuItemClickListener
+            popup.setOnMenuItemClickListener(item -> {
+               switch (item.getItemId()) {
+                  case R.id.menu_add_client_to_record:
+                     clickListener.onItemClick( position, GET_CLIENT_DATA_FROM_BASE, clientData );
+                     break;
 
-                        case R.id.menu_change_client:
-                           //clickListener.onItemClick( position, SERVER_CHANGE_CLIENT, clientData );
-                           clickListener.onItemClick( position, SERVER_CHANGE_CLIENT, clientData );
-                           break;
+                  case R.id.menu_change_client:
+                     //clickListener.onItemClick( position, SERVER_CHANGE_CLIENT, clientData );
+                     clickListener.onItemClick( position, SERVER_CHANGE_CLIENT, clientData );
+                     break;
 
-                        case R.id.menu_delete_client:
-                           //clickListener.onItemClick( position, SERVER_DELETE_CLIENT, clientData );
-                           clickListener.onItemClick( position, SERVER_DELETE_CLIENT, clientData );
-                           break;
+                  case R.id.menu_delete_client:
+                     //clickListener.onItemClick( position, SERVER_DELETE_CLIENT, clientData );
+                     clickListener.onItemClick( position, SERVER_DELETE_CLIENT, clientData );
+                     break;
 
-                        case R.id.menu_show_client_job:
-                           //clickListener.onItemClick( position, SERVER_DELETE_CLIENT, clientData );
-                           clickListener.onItemClick( position, SHOW_CLIENT_JOB, clientData );
-                           break;
-                        default:
-                           break;
-                     }
+                  case R.id.menu_show_client_job:
+                     //clickListener.onItemClick( position, SERVER_DELETE_CLIENT, clientData );
+                     clickListener.onItemClick( position, SHOW_CLIENT_JOB, clientData );
+                     break;
+                  default:
+                     break;
+               }
 
-                     return true;
-                  }
-               });
+               return true;
+            });
 
-               popup.show(); //showing popup menu
-            }
+            popup.show(); //showing popup menu
          });
       }
    }

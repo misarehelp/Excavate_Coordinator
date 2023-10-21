@@ -24,14 +24,11 @@ public abstract class PermittedTask {
         this.permission = permission;
         this.launcher =  activity.registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
-                new ActivityResultCallback<Boolean>() {
-                    @Override
-                    public void onActivityResult(Boolean result) {
-                        if(result) {
-                            granted();
-                        } else {
-                            denied();
-                        }
+                result -> {
+                    if(result) {
+                        granted();
+                    } else {
+                        denied();
                     }
                 }
         );
@@ -46,18 +43,8 @@ public abstract class PermittedTask {
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         builder.setTitle("Permissions needed")
                 .setMessage("App needs permissions to do that. You can allow or deny in next screen. Proceed?")
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        launcher.launch(permission);
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        denied();
-                    }
-                })
+                .setPositiveButton("OK", (dialog, which) -> launcher.launch(permission))
+                .setNegativeButton("Cancel", (dialog, which) -> denied())
                 .show();
     }
 

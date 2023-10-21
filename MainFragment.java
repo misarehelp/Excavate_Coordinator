@@ -48,7 +48,7 @@ public class MainFragment extends Fragment implements Constants {
     public void onViewCreated(View view, Bundle savedInstanceState) {
 
         RecyclerView recyclerView = view.findViewById(R.id.lv_records_list);
-        MainRecycleAdapter adapter = new MainRecycleAdapter(context, data, date, theme_type);
+        MainRecycleAdapter adapter = new MainRecycleAdapter(context, data, theme_type);
 
         DividerItemDecoration horizontalDecoration = new DividerItemDecoration(recyclerView.getContext(), DividerItemDecoration.VERTICAL);
         Drawable horizontalDivider = ContextCompat.getDrawable(context, R.drawable.layout_devider);

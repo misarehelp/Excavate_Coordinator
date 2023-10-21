@@ -218,7 +218,6 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
                 break;
             case R.id.duration_spinner:
                 String [] duration_array = getResources().getStringArray(R.array.duration_values);
-                //duration_value = (String) parent.getItemAtPosition(position);
                 duration_value = duration_array[position];
                 break;
             default:

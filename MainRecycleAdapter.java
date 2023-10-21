@@ -24,12 +24,10 @@ public class MainRecycleAdapter  extends RecyclerView.Adapter<MainRecycleAdapter
    private final LayoutInflater inflater;
    private List<MainScreenData> data;
    private int theme_type;
-   private String date;
    private  float weight_job, weight_name, weight_ll_image;
 
-   MainRecycleAdapter(Context context, List<MainScreenData> data, String date, int theme_type) {
+   MainRecycleAdapter(Context context, List<MainScreenData> data, int theme_type) {
       this.data = data;
-      this.date = date;
       this.theme_type = theme_type;
       this.inflater = LayoutInflater.from(context);
       this.context = context;
@@ -144,22 +142,20 @@ public class MainRecycleAdapter  extends RecyclerView.Adapter<MainRecycleAdapter
                      //Inflating the Popup using xml file
                      popup.getMenuInflater().inflate(R.menu.main_list_menu, popup.getMenu());
                      //registering popup with OnMenuItemClickListener
-                     popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                        public boolean onMenuItemClick(MenuItem item) {
-                           switch (item.getItemId()) {
-                              case R.id.menu_add_rec:
-                                 clickListener.onItemClick(INDEX_FREE_RECORD, time, type);
-                                 break;
+                     popup.setOnMenuItemClickListener(item -> {
+                        switch (item.getItemId()) {
+                           case R.id.menu_add_rec:
+                              clickListener.onItemClick(INDEX_FREE_RECORD, time, type);
+                              break;
 
-                              case R.id.menu_add_note:
-                                 clickListener.onItemClick(INDEX_NOTE, time, INDEX_NOTE);
-                                 break;
-                              default:
-                                 break;
-                           }
-
-                           return true;
+                           case R.id.menu_add_note:
+                              clickListener.onItemClick(INDEX_NOTE, time, INDEX_NOTE);
+                              break;
+                           default:
+                              break;
                         }
+
+                        return true;
                      });
 
                      popup.show(); //showing popup menu

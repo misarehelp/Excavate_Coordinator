@@ -66,15 +66,12 @@ public class HistoryRecycleAdapter extends RecyclerView.Adapter<HistoryRecycleAd
             tv_client_comment = view.findViewById(R.id.tv_client_comment);
             tv_client_has_photo = view.findViewById(R.id.tv_client_has_photo);
 
-            view.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    int position = getAdapterPosition();
-                    RecordData recordData = data.get(position);
-                    if (recordData.getPicBefore()) {
-                        String filename = recordData.getName() + "-" + recordData.getPhone() + "-" + recordData.getDate();
-                        clickListener.onItemClick(filename);
-                    }
+            view.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                RecordData recordData = data.get(position);
+                if (recordData.getPicBefore()) {
+                    String filename = recordData.getName() + "-" + recordData.getPhone() + "-" + recordData.getDate();
+                    clickListener.onItemClick(filename);
                 }
             });
         }

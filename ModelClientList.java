@@ -67,7 +67,7 @@ class ModelClientList implements Contract.ModelClientList, Constants {
          @Override
          public void run() {
 
-            ArrayList<ClientData> client_data_array = new ArrayList<>();
+            ArrayList<ClientData> client_data_array;
             client_data_array = dataParameters.getClientDataArray();
 
             String status = intent.getStringExtra(SENDER);

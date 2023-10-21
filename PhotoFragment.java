@@ -41,7 +41,7 @@ public class PhotoFragment extends Fragment implements Constants, Enums, Contrac
          callbackToActivity = (Contract.PhotoFragmentToRecordActivity) context;
          callbackToRecordFragment = (Contract.SomeFragmentToRecordActivity) context;
       } catch (ClassCastException e) {
-         throw new ClassCastException(context.toString() + " must implement Contract.RecordFragmentToRecordActivity");
+         throw new ClassCastException(context + " must implement Contract.RecordFragmentToRecordActivity");
       }
     }
 

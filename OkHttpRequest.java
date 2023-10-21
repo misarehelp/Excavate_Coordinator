@@ -32,7 +32,6 @@ public class OkHttpRequest implements Constants, Enums {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(final Call call, IOException e) {
-                Log.d(LOG_TAG, "OkHttpRequest: Server ERROR is: " + e.toString());
                 callbackSender(context, command, DATA_IS_NOT_READY, NET_ERROR_STATE);
             }
 
