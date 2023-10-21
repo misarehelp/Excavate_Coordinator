@@ -12,12 +12,11 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-public class OkHttpRequest implements KM_Constants, Enums{
+public class OkHttpRequest implements Constants, Enums {
     private String status = DATA_IS_NOT_READY;
-    //int attempt = 0;
-    //private static Context context;
 
-    public void serverGetback(Context context, String command, String dateID, String data) {
+    public void serverGetback( Context context, String command, String dateID, String data) {
+
         OkHttpClient client = new OkHttpClient();
         Log.d(LOG_TAG, "OkHttpRequest. Command is:" + command + ";  Data: " + data);
         RequestBody formBody = new FormBody.Builder()
@@ -29,13 +28,12 @@ public class OkHttpRequest implements KM_Constants, Enums{
                 .url(URL_ADDR)
                 .post(formBody)
                 .build();
-
         //исполняем запрос асинхронно
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(final Call call, IOException e) {
                 Log.d(LOG_TAG, "OkHttpRequest: Server ERROR is: " + e.toString());
-                callbackSender(context, DATA_IS_NOT_READY, NET_ERROR_STATE);
+                callbackSender(context, command, DATA_IS_NOT_READY, NET_ERROR_STATE);
             }
 
             @Override
@@ -43,35 +41,33 @@ public class OkHttpRequest implements KM_Constants, Enums{
                 String res = response.body().string();
                 String message = res;
 
-                if ( res.equals(DATA_WAS_SAVED )) {
+                if (res.startsWith("[\"{") || res.startsWith("{") ) {
+                    status = DATA_IS_READY;
+
+                } else if ( res.equals(DATA_WAS_SAVED )) {
                     status = DATA_WAS_SAVED;
 
-                } else if (res.startsWith("[\"{")) {
-                        status = DATA_IS_READY;
+                } else if (res.contains(URL_WAS_NOT_FOUND)){
+                    message = URL_WAS_NOT_FOUND;
 
                 } else if ( command.equals(SERVER_GET_NEXT_ID) ) {
                     status = SERVER_GET_NEXT_ID;
 
-                } else if (res.contains(SERVER_ANSWER_CONFIG)) {
-                    status = SERVER_ANSWER_CONFIG;
-
-                } else if (res.contains(URL_WAS_NOT_FOUND)){
-                    message = URL_WAS_NOT_FOUND;
+                } else if (res.contains(SERVER_ANSWER_CONFIG_CHANGED)) {
+                    status = SERVER_ANSWER_CONFIG_CHANGED;
                 }
 
-                //Log.d(LOG_TAG, "OkHttpRequest: Get back with server, response is: " + res);
-                callbackSender(context, status, message);
+                callbackSender(context, command, status, message);
             }
         });
     }
 
-    private void callbackSender(Context context, String status, String message) {
+    private void callbackSender(Context context, String command, String status, String message) {
         Intent intent = new Intent();
-        //intent.setAction(ACTION_FROM_OKHTTP);
         String action = context.getClass().getSimpleName();
-        //String action = PREF_ACTIVITY;
         Log.d(LOG_TAG, "OkHttpRequest: callbackSender, Action is: " + action);
         intent.setAction(action);
+        intent.putExtra(COMMAND, command);
         intent.putExtra(SENDER, status);
         intent.putExtra(MESSAGE, message);
         context.sendBroadcast(intent);

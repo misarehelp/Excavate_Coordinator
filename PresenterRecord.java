@@ -2,10 +2,9 @@ package ru.volganap.nikolay.haircut_schedule;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 
-import java.util.ArrayList;
-
-class PresenterRecord implements Contract.PresenterRecord, KM_Constants, Contract.ViewMainLayout, Enums, Contract.ModelRecord.OnPresenterRecordCallback {
+class PresenterRecord implements Contract.PresenterRecord, Constants, Enums, Contract.ModelRecord.OnPresenterRecordCallback {
 
    private Contract.ViewRecord recordView;
    private Contract.ModelRecord modelRecord;
@@ -25,20 +24,19 @@ class PresenterRecord implements Contract.PresenterRecord, KM_Constants, Contrac
 
       recordView.setRecordButtonsVisibility(state_code);
 
-      if (!(state_code.equals(ADD_CODE))) {
+      if (!(state_code.equals(SERVER_ADD_RECORD))) {
          recordView.fillRecordInfoFields(modelRecord.getSelectedRecordData());
       }
-
    }
    // ************* start methods passed from RecordActivity to ModelRecord *******************
    @Override
    // operations to be performed - BroadcastReceiver trigger
    public void onBroadcastReceive(Intent intent) {
-      modelRecord.getFromModelBroadcastReceiver(this, this, intent);
+      modelRecord.getFromModelBroadcastReceiver(this, intent);
    }
 
    @Override
-   public void onButtonSave( ArrayList<String> rec_data ) {
+   public void onButtonSave( RecordData rec_data ) {
       modelRecord.addRecordData( this, rec_data);
    }
 
@@ -48,53 +46,41 @@ class PresenterRecord implements Contract.PresenterRecord, KM_Constants, Contrac
    }
 
    @Override
-   public void onButtonChangeRecord(ArrayList<String> rec_data) {
-
+   public void onButtonChangeRecord(RecordData  rec_data) {
       modelRecord.changeRecordData( this, rec_data);
    }
 
    @Override
+   public void onButtonAddLastCall() {
+      modelRecord.getLastIncomingCall(this);
+   }
+
+   @Override
+   public void onButtonMakeCall( String number ) {
+      Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + number));
+      context.startActivity(intent);
+   }
+
+   @Override
+   public void onButtonSendSms(RecordData rec_data, String message) {
+      modelRecord.sendSMS(this, rec_data, message);
+   }
+
+   @Override
    public void onButtonExit() {
-
       dataParameters.setStateCode(DATA_WAS_NOT_CHANGED);
-      onCloseRecordAction();
+      recordView.finishRecordActivity();
    }
 
-   @Override
-   public void onButtonShowClientJob() {
-      //modelMain.getBackWithServer(SERVER_GET_NEXT_ID,"","");
-      //modelMain.setModelMainButtonNewClick( this, this );
-   }
-
-   @Override
-   public void onButtonAddFromBook() {
-      //modelMain.getBackWithServer(SERVER_GET_NEXT_ID,"","");
-      //modelMain.setModelMainButtonNewClick( this, this );
-   }
-
-   @Override
-   public void onRecordListViewItemClick(int position, int id, int viewItew) {
-      //modelMain.getBackWithServer(SERVER_GET_NEXT_ID,"","");
-   }
-
-// ************* CallBack methods run from ModelRecord *******************
+   // ************* CallBack methods run from ModelRecord *******************
    @Override
    public void onCloseRecordAction( ) {
-
       recordView.finishRecordActivity();
    }
 
    @Override
-   public void OnFinishedButtonSaveSetViewButtonsVisibility( String state ) {
-      //
-   }
-
-   @Override
-   // method to return code to  MainActivity
-   public void OnFinishedRefreshViewStatus( String state ) {
-      if (recordView != null) {
-         //recordView.refreshMainStatus( state );
-      }
+   public void onFinishedGetLastCall( String value ) {
+      recordView.setLastCallText(value);
    }
 
    @Override
@@ -105,10 +91,8 @@ class PresenterRecord implements Contract.PresenterRecord, KM_Constants, Contrac
       }
    }
 
-
    @Override
    public void onDestroy() {
-      //modelMain.sendModelDataToServer(this, SERVER_CLEAR_BUSY, dataParameters.getModelDepartmentUser(), "" );
       recordView = null;
    }
 }

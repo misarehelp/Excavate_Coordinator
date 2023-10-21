@@ -2,25 +2,24 @@ package ru.volganap.nikolay.haircut_schedule;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Handler;
+import android.provider.CallLog;
 import android.util.Log;
-
 import com.google.gson.Gson;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 
-import static java.lang.Boolean.getBoolean;
+class ModelRecord implements Contract.ModelRecord, Constants {
 
-class ModelRecord implements Contract.ModelRecord, KM_Constants  {
-
-   //private final ArrayList<RecordData> rec_data_array  = new ArrayList<>();
    final String DELIMITER = "*";
    private DataParameters dataParameters;
    private Context context;
-
    private String code;
    private RecordData rd;
    private String id_date;
@@ -29,144 +28,186 @@ class ModelRecord implements Contract.ModelRecord, KM_Constants  {
    public ModelRecord( Context context, DataParameters dataParameters ) {
       this.context = context;
       this.dataParameters = dataParameters;
-
    }
 
    // Convert Record into Json
-   private String getFromRecordDataToJson(RecordData record_data) {
-      return new Gson().toJson(record_data);
+   private String getFromRecordDataToJson(RecordData  rec_data ) {
+      rd = rec_data;
+      return new Gson().toJson(rec_data);
    }
 
    @Override
-   public void addRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener, ArrayList<String> rec_data ) {
+   public void addRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener, RecordData rec_data ) {
       //
-      //Date date_time = convertStringtoDateTime(rec_data.get(2), rec_data.get(3));
-      rd = new RecordData();
+      code = SERVER_ADD_RECORD;
 
-      rd.setName(rec_data.get(0));
-      rd.setPhone(rec_data.get(1));
-      rd.setDate(rec_data.get(2));
-      rd.setTime(rec_data.get(3));
-      rd.setDuration(rec_data.get(4));
-      rd.setJob(rec_data.get(5));
-      rd.setPrice(rec_data.get(6));
-      rd.setComment(rec_data.get(7));
-      rd.setRemind(getBoolean(rec_data.get(8)));
-      // add chosen record to list of records in the Repository
-
-      //dataParameters.setStateCode(ADD_CODE);
-      code = ADD_CODE;
-      new OkHttpRequest().serverGetback( context, SERVER_ADD_RECORD, "", getFromRecordDataToJson(rd) );
-
-      //listener.onCloseRecordAction();
+      if (isInputFieldsCorrect( rec_data.getDate(), rec_data.getTime(), rec_data.getDuration() )) {
+         sendRecordDataToServer( SERVER_ADD_RECORD, "", getFromRecordDataToJson(rec_data) );
+      } else {
+         listener.onShowToast(context.getResources().getString(R.string.incorrect_duration));
+      }
    }
 
    @Override
-   public void changeRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener, ArrayList<String> rec_data  ) {
+   public void changeRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener, RecordData  rec_data  ) {
       //
-      rd = new RecordData();
+      code = SERVER_CHANGE_RECORD;
 
-      rd.setName(rec_data.get(0));
-      rd.setPhone(rec_data.get(1));
-      rd.setDate(rec_data.get(2));
-      rd.setTime(rec_data.get(3));
-      rd.setDuration(rec_data.get(4));
-      rd.setJob(rec_data.get(5));
-      rd.setPrice(rec_data.get(6));
-      rd.setComment(rec_data.get(7));
-      rd.setRemind(getBoolean(rec_data.get(8)));
-
-      //String date_time = rd.getDate() + DELIMITER + rd.getTime();
-      //dataParameters.setStateCode(ADD_CODE);
-      code = CHANGE_CODE;
-      new OkHttpRequest().serverGetback( context, SERVER_CHANGE_RECORD, id_date, getFromRecordDataToJson(rd) );
-
+      if (isInputFieldsCorrect( rec_data.getDate(), rec_data.getTime(), rec_data.getDuration() )) {
+         sendRecordDataToServer( SERVER_CHANGE_RECORD, id_date, getFromRecordDataToJson(rec_data) );
+      } else {
+         listener.onShowToast(context.getResources().getString(R.string.incorrect_duration));
+      }
    }
 
    @Override
    public void deleteRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener ) {
       //
-      //String date_time = rd.getDate() + "*" + rd.getTime();
-      //dataParameters.setStateCode(ADD_CODE);
-      code = DELETE_CODE;
-      new OkHttpRequest().serverGetback( context, SERVER_DELETE_RECORD, id_date, "" );
+      code = SERVER_DELETE_RECORD;
+      sendRecordDataToServer( SERVER_DELETE_RECORD, id_date, "" );
+   }
 
+   void sendRecordDataToServer ( String command, String dateID, String value) {
+      new OkHttpRequest().serverGetback( context, command, dateID, value );
+   }
+
+   public boolean isInputFieldsCorrect (String s_date, String s_time, String s_duration) {
+
+      ArrayList<RecordData> rda_date = new ArrayList<>();
+      for (RecordData rda_base: dataParameters.getRecordDataArray()) {
+         if (rda_base.getDate().equals(s_date)) {
+            rda_date.add(rda_base);
+         }
+      }
+
+      String s_position = Integer.toString(dataParameters.getRecordPosition());
+
+      Calendar calendar_current = Calendar.getInstance();
+      Calendar calendar_next = Calendar.getInstance();
+      SimpleDateFormat time_formatter = new SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
+
+      boolean fit = true;
+      try {
+         Date time_current = time_formatter.parse(s_time);
+         int duration_int = Integer.parseInt(s_duration);
+
+         for (RecordData rda_item: rda_date) {
+            Date time_next = time_formatter.parse(rda_item.getTime());
+
+            if (time_current.equals(time_next) && !s_position.equals(rda_item.getIndex())) {
+               return false;
+            }
+
+            if (time_current.before(time_next)) {
+
+               calendar_current.setTime(time_current);
+               calendar_current.add(Calendar.MINUTE, duration_int - 5);
+               calendar_next.setTime(time_next);
+
+               if (calendar_current.after(calendar_next)) {
+                  fit = false;
+               }
+            }
+         }
+
+      } catch (ParseException e) {
+         Log.d(LOG_TAG, "ModelRecord - Exception is: " + e);
+      }
+
+      return fit;
    }
 
    @Override
-   public ArrayList<String> getSelectedRecordData () {
-
-      rd = dataParameters.getRecordDataArray().get(dataParameters.getPosition());
+   public RecordData getSelectedRecordData () {
+      rd = dataParameters.getRecordDataArray().get(dataParameters.getRecordPosition());
       id_date = rd.getDate() + DELIMITER + rd.getTime();
-      ArrayList<String> rd_str  = new ArrayList<>();
-
-      rd_str.add(rd.getName());
-      rd_str.add(rd.getPhone());
-      rd_str.add(rd.getDate());
-      rd_str.add(rd.getTime());
-      rd_str.add(rd.getDuration());
-      rd_str.add(rd.getJob());
-      rd_str.add(rd.getPrice());
-      rd_str.add(rd.getComment());
-      rd_str.add(Boolean.toString(rd.getRemind()));
-
-      return rd_str;
+      return rd;
    }
 
    @Override
-   public void getFromModelBroadcastReceiver( Contract.ModelRecord.OnPresenterRecordCallback act_listener, Contract.ViewMainLayout view_listener, Intent intent ) {
+   public void sendSMS(OnPresenterRecordCallback listener, RecordData rec_data, String message) {
+
+      Uri uri = Uri.parse("smsto:" + rec_data.getPhone());
+      Intent smsSIntent = new Intent(Intent.ACTION_SENDTO, uri);
+      smsSIntent.putExtra("sms_body", message);
+
+      try {
+         context.startActivity(smsSIntent);
+
+      } catch (Exception ex) {
+         listener.onShowToast("Ошибка отправки напоминания через СМС");
+         ex.printStackTrace();
+      }
+   }
+
+   @Override
+   public void getFromModelBroadcastReceiver( Contract.ModelRecord.OnPresenterRecordCallback act_listener, Intent intent ) {
       new Handler().postDelayed(new Runnable() {
          @Override
          public void run() {
 
-            String message = intent.getStringExtra(MESSAGE);
             String status = intent.getStringExtra(SENDER);
             ArrayList<RecordData> rec_data_array = dataParameters.getRecordDataArray();
 
             if (status.equals(DATA_WAS_SAVED)) {
                switch (code) {
                   // Record Data was changed on the server
-                  case ADD_CODE:
-
+                  case SERVER_ADD_RECORD:
                      rec_data_array.add(rd);
-
-                     dataParameters.setRecordDataArray(rec_data_array);
                      break;
 
-                  // Config answer was got from the server
-                  case DELETE_CODE:
-
-                     rec_data_array.remove(dataParameters.getPosition());
-
-                     dataParameters.setRecordDataArray(rec_data_array);
+                  case SERVER_DELETE_RECORD:
+                     rec_data_array.remove(dataParameters.getRecordPosition());
                      break;
 
-                  // Got some Record Data
-                  case CHANGE_CODE:
-                     // Getting Record Data after Command GET_BY_DATE or GET_ALL
-                     int pos = dataParameters.getPosition();
+                  case SERVER_CHANGE_RECORD:
+                     int pos = dataParameters.getRecordPosition();
                      rec_data_array.set( pos, rd );
-
-                     dataParameters.setRecordDataArray(rec_data_array);
                      break;
                   //Config Data has got or confirmation of saving Depline Data to Server
                   default:
-                     status = message;
                      break;
                }
+
+               dataParameters.setRecordDataArray(rec_data_array);
+               act_listener.onShowToast(DATA_WAS_SAVED);
                act_listener.onCloseRecordAction();
+
             } else {
                act_listener.onShowToast(DATA_WAS_NOT_SAVED);
             }
-            //view_listener.OnFinishedButtonSaveSetViewButtonsVisibility( status );
 
+            dataParameters.setStateCode(status);
          }
       }, 0);
    }
 
-   /* @Override
-   public void sendModelDataToServer ( Contract.ViewMainLayout view_listener, String command, String dateID, String value) {
-      //
-   } */
+   @Override
+   public void getLastIncomingCall ( Contract.ModelRecord.OnPresenterRecordCallback listener ) {
 
+      //this help you to get recent call
+      Uri contacts = CallLog.Calls.CONTENT_URI;
+      Cursor managedCursor = context.getContentResolver().query(contacts, null, null,
+              null, android.provider.CallLog.Calls.DATE + " DESC limit 1;");
+      int number = managedCursor.getColumnIndex(CallLog.Calls.NUMBER);
+      int type = managedCursor.getColumnIndex(CallLog.Calls.TYPE);
+      /* int date = managedCursor.getColumnIndex(CallLog.Calls.DATE);
+      int duration = managedCursor.getColumnIndex(CallLog.Calls.DURATION);
+      StringBuffer sb = new StringBuffer(); */
+
+      managedCursor.moveToNext();
+      String phone_number = managedCursor.getString(number);
+      String callType = managedCursor.getString(type);
+      /* String callDate = managedCursor.getString(date);
+      String callDayTime = new Date(Long.valueOf(callDate)).toString();
+      int callDuration = managedCursor.getInt(duration); */
+      managedCursor.close();
+
+      int dircode = Integer.parseInt(callType);
+      if (dircode == CallLog.Calls.INCOMING_TYPE) {
+         //Incoming calls
+      }
+
+      listener.onFinishedGetLastCall( phone_number );
+   }
 }

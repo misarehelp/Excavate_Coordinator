@@ -2,113 +2,95 @@ package ru.volganap.nikolay.haircut_schedule;
 
 import android.content.Context;
 import android.content.Intent;
-import android.view.View;
-import android.widget.AdapterView;
 
-import java.util.ArrayList;
-import java.util.Map;
-
-public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enums, Contract.ViewMainLayout, Contract.ModelMain.OnPresenterMainCallBack {
-
-    // creating object of View Interface
+public class PresenterMain implements Contract.PresenterMain, Constants, Enums, Contract.ViewMainLayout {
     private Contract.ViewMain mainView;
-    // creating object of Client Interface
-    private Contract.ViewClient clientView;
-
-    // creating object of Model Interface
     private Contract.ModelMain modelMain;
     private Context context;
     private DataParameters dataParameters;
+    private boolean future_recs = true;
 
     // initiating the objects of View and Model Interface
-    public PresenterMain(Contract.ViewMain mainView, Context context ) {
+    public PresenterMain(Contract.ViewMain mainView, Context context, int theme_type, int days_before ) {
 
         this.mainView = mainView;
         this.context = context;
-        //modelMain = new ModelMain(context, dataParameters, entriesArray, mainView.getDepartmentValuesArray());
         dataParameters = DataParameters.getInstance();
         dataParameters.setStateCode(DATA_WAS_NOT_CHANGED);
-
-        modelMain = new ModelMain( context, dataParameters );
-        //modelPermit =  new ModelPermit(dataParameters, entriesArray.length);
+        modelMain = new ModelMain( context, dataParameters, theme_type, days_before );
     }
 
     // ************* start methods passed from View to ModelMain *******************
-
-
     @Override
     public void onPermissionsGranted() {
-
-        modelMain.sendModelDataToServer( this, SERVER_GET_ALL, "", "");
-        //modelMain.getDateFromModelMain(this, 0);
+        modelMain.sendModelDataToServer( this, SERVER_GET_CLIENTS, "", "");
     }
     @Override
     // operations to be performed - Init Main MainViewLayout
     public void onChangeSharedPrefs( String key) {
+        onPermissionsGranted();
+    }
 
-        //onPermissionsGranted();
-        /*
-        if (key.equals(DEPARTMENT_USER)) {
-            sendUserToModelAndSetView( department_user);
-        }
-        if (key.equals(MODE_USER)) {
-            // trigger when Mode user is changed
-            sendUserToModelAndSetView( department_user);
-        } */
+    @Override
+    public void onChangeDaysBefore(int days) {
+        modelMain.changeDaysBefore(days);
     }
 
     @Override
     // operations to be performed - Change Server Preferences
-    public void onChangeServerPreferences( String max_records_number) {
-
-        //modelMain.sendModelDataToServer ( this, SERVER_CHANGE_CONFIG, "", max_records_number );
-        OnFinishedButtonSaveSetViewButtonsVisibility(DATA_WAS_NOT_CHANGED);
+    public void onChangeServerPreferences( String max_recs,  int days_before) {
+        modelMain.sendModelDataToServer( this, SERVER_CHANGE_CONFIG, Integer.toString(days_before), max_recs);
         OnFinishedRefreshViewStatus(DATA_REQUEST_PROCESSING);
     }
 
     @Override
     // operations to be performed - BroadcastReceiver trigger
     public void onBroadcastReceive(Intent intent) {
-        modelMain.getFromModelBroadcastReceiver(this, this, intent);
+        modelMain.getFromModelBroadcastReceiver(this,  intent);
     }
 
     @Override
     public void onButtonPreviousWeekClick() {
-
         modelMain.getDateFromModelMain( this,PERIOD * (-1), 0,0,0);
     }
 
     @Override
     public void onButtonNextWeekClick() {
-
         modelMain.getDateFromModelMain( this, PERIOD, 0,0,0);
     }
 
     @Override
-    public void onButtonAddRecordClick(String date) {
+    public void onChangeRecordClick(String date, String time, String index, String type, int theme, String command ) {
 
-        dataParameters.setStateCode(ADD_CODE);
+        if (!future_recs) {
+            if (index.equals(INDEX_FREE_RECORD) || index.equals(INDEX_NOTE)) {
+                mainView.refreshMainStatus("невозможно занести новую запись в прошлом");
+                return;
+            } else {
+                command = SERVER_SHOW_RECORD;
+            }
+        }
+
+        dataParameters.setStateCode(command);
+
+        if (!command.equals(SERVER_ADD_RECORD)) {
+            dataParameters.setRecordPosition(Integer.parseInt(index));
+        }
+
         Intent intent = new Intent(context, RecordActivity.class);
-        intent.putExtra(ADD_CODE, date);
+        intent.putExtra(DATE_CODE, date);
+        intent.putExtra(TIME_CODE, time);
+        intent.putExtra(INDEX_CODE, index);
+        intent.putExtra(TYPE_CODE, type);
+        intent.putExtra(THEME, theme);
         context.startActivity(intent);
     }
 
     @Override
     // method to be called when the Button Delete is clicked
-    public void onButtonAddClientClick() {
-        //modelMain.updateDataArrayAfterDelete( this );
-    }
-
-    @Override
-    // method to be called when the Button Delete is clicked
-    public void onButtonShowClientsClick() {
-        //modelMain.updateDataArrayAfterDelete( this );
-    }
-
-    @Override
-    // method to be called when the Button Delete is clicked
-    public void onButtonExitClick() {
-        //modelMain.updateDataArrayAfterSave( this );
+    public void onButtonShowHideFreeRecordsClick() {
+        modelMain.changeFreeRecordsState();
+        modelMain.getDateFromModelMain( this, 0, 0,0,0);
     }
 
     @Override
@@ -118,64 +100,48 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
     }
 
     @Override
-    // operations to be performed - on Menu item "Show Archive" click
-    public void onShowArchiveClick() {
-        modelMain.sendModelDataToServer (  this, SERVER_GET_ARCHIVE, "", "" );
+    public void onFinishedGetPastFuture(boolean future_recs) {
+        this.future_recs = future_recs;
+        mainView.setArchiveStatus(future_recs);
+        mainView.setShowHideButtonVisibility(future_recs);
 
-       OnFinishedButtonSaveSetViewButtonsVisibility(DATA_WAS_NOT_CHANGED);
-       OnFinishedRefreshViewStatus(DATA_REQUEST_PROCESSING);
-    }
-
-    @Override
-    public void onMainListViewItemClick( int position ) {
-
-        dataParameters.setStateCode(CHANGE_CODE);
-        dataParameters.setPosition(position);
-        context.startActivity(new Intent(context, RecordActivity.class));
-        //modelPermit.setModelPermitListItemClick( this, this, modelMain, position, id, viewItew );
+        if (future_recs) {
+            onFinishedGetServerClientData();
+        } else {
+            modelMain.sendModelDataToServer (  this, SERVER_GET_ARCHIVE_ALL, "", "" );
+        }
     }
 
     // ************* start  of callbacks passed from ModelMain *******************
     @Override
     // method to return Data for UserMadeList
-    public void onFinishedGetServerData () {
+    public void onFinishedGetServerRecordsData () {
         if (mainView != null) {
             modelMain.getDateFromModelMain( this,0, 0,0,0);
         }
     }
 
     @Override
+    public void onFinishedGetServerClientData() {
+        modelMain.sendModelDataToServer( this, SERVER_GET_ALL, "", "");
+    }
+
+    @Override
     // method to return Data for UserMadeList
     public void onFinishedBrUserMadeList (ListViewData listViewData) {
         if (mainView != null) {
-            mainView.fillInRecordsList(listViewData.getOutputArray(), listViewData.getDaysInterval(), listViewData.getDaysOfWeek());
+            mainView.fillInRecordsList(listViewData.getOutputArray(), listViewData.getDaysInterval(), listViewData.getDaysOfWeek(), listViewData.getSumOfRec());
         }
     }
-    // ************* start  of callbacks passed from ModelPermit *******************
-
-    @Override
-    // method to return code to  MainActivity
-    public void OnFinishedButtonSaveSetViewButtonsVisibility( String state ) {
-        if (mainView != null) {
-            mainView.setViewButtonsFieldsVisibility(state);
-        }
-    }
-
+    // ************* start  of callbacks passed from ModelMain *******************
     @Override
     // method to return code to  MainActivity
     public void OnFinishedRefreshViewStatus( String state ) {
         if (mainView != null) {
-            mainView.refreshMainStatus( state );
+            if (state.contains(SERVER_ANSWER_CONFIG_CHANGED))  mainView.showToast(state);
+            mainView.refreshMainStatus(state);
         }
     }
-
-    /*@Override
-    // method to return code to  MainActivity
-    public void OnFinishedShowToast( String  value ) {
-        if (mainView != null) {
-            mainView.showToast(value);
-        }
-    } */
 
     @Override
     public void onMainActivityResume(){
@@ -188,7 +154,6 @@ public class PresenterMain implements Contract.PresenterMain, KM_Constants, Enum
 
     @Override
     public void onDestroy() {
-
         mainView = null;
     }
 }

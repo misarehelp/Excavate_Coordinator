@@ -1,20 +1,13 @@
 package ru.volganap.nikolay.haircut_schedule;
 
-import android.os.Handler;
-
 import java.util.ArrayList;
-import java.util.Date;
 
 public class DataParameters implements Contract.DataParameters {
 
     private ArrayList<RecordData> rec_data_array;
+    private ArrayList<ClientData> client_data_array;
     private String code;
-    private int position;
-    //private RecordData rec_data;
-
-    //private  int id;
-
-    //private int position = 0;
+    private int rec_pos, client_pos;
     private static DataParameters INSTANCE;
 
     private DataParameters() {
@@ -30,40 +23,40 @@ public class DataParameters implements Contract.DataParameters {
     //getters
     @Override
     public ArrayList<RecordData> getRecordDataArray() {return rec_data_array;}
-
-    //public RecordData getRecordData() {return rec_data;}
-
+    @Override
+    public ArrayList<ClientData> getClientDataArray() {
+        return client_data_array;
+    }
     // Get State Code
     public String getStateCode() {
         return code;
     }
-
-    // Get position
-    public int getPosition() {
-        return position;
+    // Get Record position
+    public int getRecordPosition() {
+        return rec_pos;
     }
-
-    /* public int getId() {
-        return id;
-    }; */
-
+    // Get Client position
+    public int getClientPosition() {
+        return client_pos;
+    }
     //setters
     @Override
     public void setRecordDataArray( ArrayList<RecordData> value) {this.rec_data_array = value;}
-
-    /* public void setRecordData( RecordData value) {this.rec_data = value;} */
+    @Override
+    public void setClientDataArray(ArrayList<ClientData> value) {
+        this.client_data_array = value;
+    }
     // Set State Code
     public void setStateCode(String code) {
         this.code = code;
     }
-
-    // Get position
-    public void setPosition(int position) {
-        this.position = position;
+    // Get Record position
+    public void setRecordPosition(int rec_pos) {
+        this.rec_pos = rec_pos;
     }
-
-    /* public void setId(int id) {
-        this.id = id;
-    }; */
+    // Get Client position
+    public void setClientPosition(int client_pos) {
+        this.client_pos = client_pos;
+    }
 
 }

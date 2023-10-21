@@ -1,81 +1,245 @@
 package ru.volganap.nikolay.haircut_schedule;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
+import androidx.fragment.app.Fragment;
+import androidx.viewpager2.widget.ViewPager2;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.ListView;
-import android.widget.SimpleAdapter;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.Map;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 
-public class RecordActivity extends AppCompatActivity implements KM_Constants, Enums, Contract.ViewRecord, Contract.ActivityReciever {
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
-    private SharedPreferences sharedPrefs;
+public class RecordActivity extends AppCompatActivity implements Constants, Enums, Contract.ActivityReciever, Contract.RecordFragmentToRecordActivity,
+        Contract.ClientFragmentToRecordActivity, Contract.PhotoFragmentToRecordActivity, Contract.SomeFragmentToRecordActivity,
+        Contract.Recycle.HistoryInterface {
 
     private BroadcastReceiver recordBroadcastReceiver;
+    private Contract.RecordActivityToFragmentBroadcast callbackToRecordFragmentBroadcast, callbackToClientFragmentBroadcast, callbackToHistoryFragmentBroadcast;
+    private Contract.RecordActivityToRecordFragment callbackToRecordFragment;
+    private Contract.RecordActivityToSomeFragment callback_HR_toHistoryFragment, callback_HR_toRecordFragment, callback_HR_toClientFragment;
+    private Contract.RecordActivityToPhotoFragment callbackToPhotoFragment;
+    private ViewPager2 vp_record;
+    private Uri uri;
+    private File imageFile = null;
 
-    private EditText et_client_name, et_client_phone, et_date, et_time, et_duration, et_job, et_price, et_record_comment;
-    private Button bt_save, bt_change, bt_del_rec, bt_exit, bt_show_client_job, bt_add_from_book;
+    private int REQUEST_CAMERA = 11;
+    private int REQUEST_GALLERY = 22;
+    private int RECORD_TAB = 0;
+    private int PHOTO_TAB = 1;
+    private int CLIENT_TAB = 2;
+    private int HISTORY_TAB = 3;
+    private String filename;
+    private SharedPreferences sharedPrefs;
 
-    private CheckBox cb_send_notif;
-    private ListView lv_records_list;
+    private ActivityResultLauncher<Intent> launchGaleryActivity = registerForActivityResult( new ActivityResultContracts.StartActivityForResult(), result -> {
+        getBitmapFromIntent (result, REQUEST_GALLERY);
+    });
 
-    Contract.PresenterRecord presenterRecord;
+    private ActivityResultLauncher<Intent> launchCameraActivity = registerForActivityResult( new ActivityResultContracts.StartActivityForResult(), result -> {
+        getBitmapFromIntent (result, REQUEST_CAMERA);
+    });
+
+    private void getBitmapFromIntent (androidx.activity.result.ActivityResult result, int request) {
+
+        if ( (result.getResultCode() == AppCompatActivity.RESULT_OK) ) {
+            try {
+
+                if ( request == REQUEST_GALLERY ) {
+                    uri = result.getData().getData();
+                }
+
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+                if (null != imageFile) {
+                    imageFile.delete();
+                }
+                callbackToPhotoFragment.saveBitmapToRepository(bitmap, filename, RECORD_HOST );
+                vp_record.setCurrentItem(PHOTO_TAB);
+
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_record);
         sharedPrefs = getSharedPreferences(PREF_ACTIVITY, MODE_PRIVATE);
+
         Intent intent = getIntent();
-        String date = intent.getStringExtra(ADD_CODE);
-        initRecordViewLayout(date);
+        String date = intent.getStringExtra(DATE_CODE);
+        String time = intent.getStringExtra(TIME_CODE);
+        String index = intent.getStringExtra(INDEX_CODE);
+        String type = intent.getStringExtra(TYPE_CODE);
+        int theme = intent.getIntExtra(THEME, 0);
+        setTheme(theme);
 
-        presenterRecord = new PresenterRecord(this, this);
-
-        // Init BroadcastReceiver
-        initBroadcastReceiver();
-        //setRecordButtonsVisibility(DATA_WAS_NOT_CHANGED);
+        setContentView(R.layout.activity_record);
+        initRecordViewPager(index, date, time, type);
     }
 
-    private void initRecordViewLayout(String date) {
-        // Record Layout
-        et_client_name = findViewById(R.id.et_client_name);
-        et_client_phone = findViewById(R.id.et_client_phone);
-        et_date = findViewById(R.id.et_date);
-        et_date.setText(date);
-        et_time = findViewById(R.id.et_time);
-        et_duration = findViewById(R.id.et_duration);
-        et_job = findViewById(R.id.et_job);
-        et_price = findViewById(R.id.et_price);
-        et_record_comment = findViewById(R.id.et_record_comment);
+    @Override
+    public void doPictureAction(Enums.PhotoType picture_type, String filename ) {
+        this.filename = filename;
 
-        bt_save = findViewById(R.id.bt_save);
-        bt_change = findViewById(R.id.bt_change);
-        bt_exit = findViewById(R.id.bt_exit);
-        bt_del_rec = findViewById(R.id.bt_del_rec);
-        bt_show_client_job = findViewById(R.id.bt_show_client_job);
-        bt_add_from_book = findViewById(R.id.bt_add_from_book);
+        switch (picture_type) {
+            // Record Data was changed on the server
+            case REPOSITORY:
+                callbackToPhotoFragment.getSavedFileByName(filename, RECORD_HOST);
+                break;
 
-        cb_send_notif = findViewById(R.id.cb_send_notif);
+            case CAMERA:
+                runCameraIntent();
+                break;
 
-        //lv_records_list = findViewById(R.id.lv_records_list);
-        //lv_records_list.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+            case GALLERY:
+                Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                //intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                this.launchGaleryActivity.launch(intent);
 
+            default:
+                break;
+        }
+    }
+
+    public void runCameraIntent() {
+        try {
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            File path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), FILE_STORAGE);
+            if (!path.exists()) {
+                try {
+                    path.mkdir();
+                } catch (Exception e) {
+                    Log.d(LOG_TAG, "Exception e: " + e);
+                }
+            }
+
+            imageFile = File.createTempFile("tempFile", ".jpg", path);
+            Context context = this.getBaseContext();
+            uri = FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".provider", imageFile);
+
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+            intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            this.launchCameraActivity.launch(intent);
+
+        } catch (Exception e) {
+            Log.d(LOG_TAG, "Main - openCameraApp, e: " + e);
+        }
+    }
+
+    @Override
+    public void deletePictureFile(String filename) {
+        callbackToPhotoFragment.deletePictureFile(filename);
+    }
+
+    @Override
+    public void passClientDataToActivity(String name, String phone) {
+        callback_HR_toClientFragment.onGetClientDataToFragment( name, phone );
+        vp_record.setCurrentItem(CLIENT_TAB);
+    }
+
+    @Override
+    public void onSavePictureResult(boolean value) {
+        callbackToRecordFragment.onLoadPictureResult( value );
+    }
+
+    @Override
+    public void onLoadPictureResult(boolean value) {
+        callbackToRecordFragment.onLoadPictureResult( value );
+    }
+
+    @Override
+    public void onPhotoFragmentViewCreated() {
+        callbackToRecordFragment.onPhotoFragmentViewCreatedToRecord();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CAMERA) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                for (String p : permissions) {
+                    String msg = "";
+                    if (this.checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED)
+                        msg = "Permission Granted for " + p;
+                    else
+                        msg = "Permission not Granted for " + p;
+                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    }
+
+    private void initRecordViewPager( String index, String date, String time, String type ) {
+
+        String [] page_names = getResources().getStringArray(R.array.record_pages);
+        vp_record = findViewById(R.id.vp_record);
+
+        MainPagerAdapter fragmentStateAdapter = new MainPagerAdapter(this );
+        // define fragments of viewpager2
+        Fragment recordFragment = new RecordFragment( index, date, time, type );
+        Fragment clientListFragment = new ClientListFragment();
+        Fragment historyFragment = new HistoryListFragment();
+        Fragment photoFragment = new PhotoFragment(date, sharedPrefs);
+
+        // Init BroadcastReceiver
+        try {
+            callbackToRecordFragment = (Contract.RecordActivityToRecordFragment) recordFragment;
+            callback_HR_toHistoryFragment = (Contract.RecordActivityToSomeFragment) historyFragment;
+            callback_HR_toRecordFragment = (Contract.RecordActivityToSomeFragment) recordFragment;
+            callback_HR_toClientFragment = (Contract.RecordActivityToSomeFragment) clientListFragment;
+            callbackToRecordFragmentBroadcast = (Contract.RecordActivityToFragmentBroadcast) recordFragment;
+            callbackToClientFragmentBroadcast = (Contract.RecordActivityToFragmentBroadcast) clientListFragment;
+            callbackToHistoryFragmentBroadcast = (Contract.RecordActivityToFragmentBroadcast) historyFragment;
+            callbackToPhotoFragment = (Contract.RecordActivityToPhotoFragment) photoFragment;
+
+        } catch (ClassCastException e) {
+            throw new ClassCastException(this.toString()
+                    + " must implement Contract.RecordActivity.ToRecordFragment");
+        }
+        initBroadcastReceiver();
+
+        fragmentStateAdapter.addFragment(recordFragment);
+
+        if (type.equals(INDEX_NOTE)) {
+            page_names[0] = getResources().getString(R.string.tv_note_title);
+        } else {
+            fragmentStateAdapter.addFragment(photoFragment);
+            fragmentStateAdapter.addFragment(clientListFragment);
+            fragmentStateAdapter.addFragment(historyFragment);
+        }
+
+        vp_record.setOffscreenPageLimit(page_names.length -1);
+        vp_record.setAdapter(fragmentStateAdapter);
+
+        TabLayout tab_record = findViewById(R.id.tab_record);
+        new TabLayoutMediator(tab_record, vp_record, false, (tab, position) -> {
+            //tab.view.setBackgroundColor(Color.WHITE);
+            tab.setText(page_names[position]);
+
+        }).attach();
     }
 
     @Override
@@ -83,184 +247,27 @@ public class RecordActivity extends AppCompatActivity implements KM_Constants, E
         IntentFilter filter = new IntentFilter();
         //Set filter by Class name
         filter.addAction(getClass().getSimpleName());
-        //filter.addAction(PREF_ACTIVITY);
+
         recordBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (intent != null) {
-                    presenterRecord.onBroadcastReceive(intent);
+                    String command = intent.getStringExtra(COMMAND);
+
+                    if (command.equals(SERVER_ADD_CLIENT) || command.equals(SERVER_CHANGE_CLIENT) || command.equals(SERVER_DELETE_CLIENT)) {
+                        callbackToClientFragmentBroadcast.onBroadcastReceive(intent);
+
+                    } else if (command.equals(SERVER_GET_ARCHIVE_BY_PHONE)) {
+                        callbackToHistoryFragmentBroadcast.onBroadcastReceive(intent);
+                        vp_record.setCurrentItem(HISTORY_TAB);
+
+                    } else {
+                        callbackToRecordFragmentBroadcast.onBroadcastReceive(intent);
+                    }
                 }
             }
         };
         registerReceiver(recordBroadcastReceiver, filter);
-        // Set visibility and onclick method of buttons
-        buttonsSetOnClickListener();
-    }
-/*
-    @Override
-    public void fillInJobsList(ArrayList<Map<String, String>> data) {
-
-        int[] to = { R.id.li_rec_time, R.id.li_rec_job, R.id.li_rec_name, R.id.li_rec_comment };
-
-        SimpleAdapter adapter = new SimpleAdapter(this, data, R.layout.main_list_item_1, FROM, to);
-        setAdapterAndItemClickListener(adapter, R.id.lv_records_list);
-    }
-*/
-    @Override
-    public void fillRecordInfoFields ( ArrayList<String> value ) {
-
-        et_client_name.setText(value.get(0));
-        et_client_phone.setText(value.get(1));
-        et_date.setText(value.get(2));
-        et_time.setText(value.get(3));
-        et_duration.setText(value.get(4));
-        et_job.setText(value.get(5));
-        et_price.setText(value.get(6));
-        et_record_comment.setText(value.get(7));
-        cb_send_notif.setChecked(Boolean.parseBoolean(value.get(8)));
-
-    }
-    private void setAdapterAndItemClickListener(SimpleAdapter adapter, int lv_id) {
-        ListView lv = findViewById(lv_id);
-        lv.setAdapter(adapter);
-        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-
-                presenterRecord.onRecordListViewItemClick( position, lv_id, R.id.lv_records_list );
-            }
-        });
-    }
-
-    @Override
-    public void setRecordButtonsVisibility (String permit_code) {
-        // Check for if a new permit
-        switch (permit_code) {
-            case ADD_CODE:
-
-                bt_save.setVisibility(View.VISIBLE);
-                bt_change.setVisibility(View.INVISIBLE);
-                bt_del_rec.setVisibility(View.INVISIBLE);
-                bt_exit.setVisibility(View.VISIBLE);
-                bt_show_client_job.setVisibility(View.VISIBLE);
-                bt_add_from_book.setVisibility(View.VISIBLE);
-                break;
-
-            case CHANGE_CODE:
-            case DELETE_CODE:
-
-                bt_save.setVisibility(View.INVISIBLE);
-                bt_change.setVisibility(View.VISIBLE);
-                bt_del_rec.setVisibility(View.VISIBLE);
-                bt_exit.setVisibility(View.VISIBLE);
-                bt_show_client_job.setVisibility(View.VISIBLE);
-                bt_add_from_book.setVisibility(View.VISIBLE);
-                break;
-
-            //case EMPTY_STORAGE_STATE:
-            //case DATA_IS_READY:
-            //case DATA_WAS_NOT_CHANGED:
-            //case DATA_WAS_SAVED:
-            //case DATA_WAS_DELETED:
-            default:
-                bt_save.setVisibility(View.INVISIBLE);
-                bt_change.setVisibility(View.VISIBLE);
-                bt_del_rec.setVisibility(View.VISIBLE);
-                bt_exit.setVisibility(View.VISIBLE);
-                bt_show_client_job.setVisibility(View.VISIBLE);
-                bt_add_from_book.setVisibility(View.VISIBLE);
-                break;
-        }
-    }
-
-    private void buttonsSetOnClickListener() {
-
-        // save new record
-        bt_save.setOnClickListener(v -> {
-            ArrayList<String> rec_data  = checkCorrectInput();
-            if (rec_data != null) {
-                presenterRecord.onButtonSave( rec_data );
-            }
-        });
-
-        // delete record
-        bt_del_rec.setOnClickListener(v -> {
-            presenterRecord.onButtonDeleteRecord();
-        });
-
-        // change record
-        bt_change.setOnClickListener(v -> {
-            ArrayList<String> rec_data  = checkCorrectInput();
-            if (rec_data != null) {
-                presenterRecord.onButtonChangeRecord( rec_data );
-            }
-        });
-
-        // Exit a programm
-        bt_exit.setOnClickListener(v -> {
-            presenterRecord.onButtonExit();
-        });
-
-        // show a list of jobs for a client
-        bt_show_client_job.setOnClickListener(v -> {
-            presenterRecord.onButtonShowClientJob();
-
-        });
-
-        // add a client number from a phone book
-        bt_add_from_book.setOnClickListener(v -> {
-            presenterRecord.onButtonAddFromBook();
-        });
-    }
-
-    private ArrayList<String> checkCorrectInput() {
-
-        ArrayList<String> rec_data  = new ArrayList<>();
-        boolean correct_input = true;
-
-        rec_data.add(et_client_name.getText().toString());
-        rec_data.add(et_client_phone.getText().toString());
-        rec_data.add(et_date.getText().toString());
-        rec_data.add(et_time.getText().toString());
-        rec_data.add(et_duration.getText().toString());
-        rec_data.add(et_job.getText().toString());
-        rec_data.add(et_price.getText().toString());
-        rec_data.add(et_record_comment.getText().toString());
-
-        for (int i = 0; i < rec_data.size()-1; i++) {
-            if (rec_data.get(i).isEmpty()) {
-                correct_input = false;
-            }
-        }
-
-        if ( correct_input ) {
-            rec_data.add(Boolean.toString(cb_send_notif.isChecked()));
-            return rec_data;
-        } else {
-
-            final String FILL_IN_FIELDS ="Необходимо заполнить поля: "
-                    + "'" + getResources().getString(R.string.tv_client_name) + "', '"
-                    + getResources().getString(R.string.tv_client_phone) + "', '"
-                    + getResources().getString(R.string.tv_date) + "', '"
-                    + getResources().getString(R.string.tv_time) + "', '"
-                    + getResources().getString(R.string.tv_duration) + "', '"
-                    + getResources().getString(R.string.tv_job) + "', '"
-                    + getResources().getString(R.string.tv_job_price) + "'";
-            Toast.makeText(this, FILL_IN_FIELDS, Toast.LENGTH_LONG).show();
-            return null;
-        }
-
-        /*
-        et_client_name.getText().toString().isEmpty() || et_client_phone.getText().toString().isEmpty() ||
-                et_date.getText().toString().isEmpty() || et_time.getText().toString().isEmpty() ||
-                et_duration.getText().toString().isEmpty() || et_job.getText().toString().isEmpty() ||
-                et_price.getText().toString().isEmpty()
-         */
-    }
-
-    @Override
-    public void showToast(String status) {
-        Toast.makeText(this, status, Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -269,10 +276,41 @@ public class RecordActivity extends AppCompatActivity implements KM_Constants, E
     }
 
     @Override
+    public void onGetClientDataToActivity ( String name, String phone, boolean show_hystory ) {
+        if (show_hystory) {
+            callback_HR_toHistoryFragment.onGetClientDataToFragment(name, phone);
+        } else {
+            callback_HR_toRecordFragment.onGetClientDataToFragment(name, phone);
+            vp_record.setCurrentItem(RECORD_TAB);
+        }
+    }
+
+    @Override
+    public void onItemClick(String filename) {
+        callbackToPhotoFragment.getSavedFileByName(filename, HISTORY_LIST_HOST);
+        vp_record.setCurrentItem(PHOTO_TAB);
+    }
+
+    @Override
+    public void backToRecordFragment(int host) {
+        vp_record.setCurrentItem(host);
+    }
+
+    @Override
     public void onDestroy() {
         Log.d(LOG_TAG, "RecordActivity: onDestroy ");
         unregisterReceiver(recordBroadcastReceiver);
         super.onDestroy();
-        presenterRecord.onDestroy();
+
     }
 }
+
+             /*
+             File currentFile = File.createTempFile("currentFile", ".jpg", path);
+             Uri currentUri = FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".fileprovider", currentFile);
+             List<ResolveInfo> resInfoList = context.getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+             for (ResolveInfo resolveInfo : resInfoList) {
+                 String packageName = resolveInfo.activityInfo.packageName;
+                 context.grantUriPermission(packageName, currentUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+             } */
+//startActivityForResult(intent, REQUEST_CAMERA);
