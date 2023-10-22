@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     private static final String DEFAULT_MAX_RECORDS = "60";
     private static final int MY_PERMISSIONS_REQUEST_SEND_SMS =101;
     private static final String ARCHIVE_DATA = "Архив: ";
+    private static final String NEED_RESTART = "Это первый запуск приложения. Для корректной работы приложения его необходимо перезапустить";
 
     private SharedPreferences sharedPrefs;
     private SharedPreferences.OnSharedPreferenceChangeListener prefChangeListener;
@@ -171,6 +172,12 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
             protected void granted() {
                 presenterMain.onPermissionsGranted();
             }
+
+            @Override
+            protected void denied() {
+                runPrefActivity(true);
+                Toast.makeText(getApplicationContext(), NEED_RESTART, Toast.LENGTH_LONG).show();
+            }
         };
         scanPermissionsTask.run();
     }
@@ -183,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.d(LOG_TAG, "onRequestPermissionsResult: " + grantResults[0] );
                 } else {
-                    //Toast.makeText(getApplicationContext(), "SMS faild, please try again.", Toast.LENGTH_LONG).show();
+                    Log.d(LOG_TAG, "onRequestPermissionsResult: failed" );
                 }
             }
         }
@@ -271,7 +278,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         tab.select();
         showTvDate(d_interval.get(current_page));
 
-        //Log.d(LOG_TAG, "Main - fillInRecordsList - current_page: " + current_page);
         /* mainVp2Adapter.setValues(new_data);
         vpPager.setCurrentItem(0);
         mainVp2Adapter.notifyDataSetChanged(); */
@@ -353,7 +359,8 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         switch (item.getItemId()) {
 
             case R.id.set_item:
-                startActivity(new Intent(this, PrefActivity.class));
+                runPrefActivity(false);
+                //startActivity(new Intent(this, PrefActivity.class));
                 break;
 
             case R.id.serv_config_item:
@@ -365,6 +372,12 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
                 break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void runPrefActivity (boolean first_start) {
+        Intent intent = new Intent(this, PrefActivity.class);
+        intent.putExtra(COMMAND, first_start);
+        startActivity(intent);
     }
 
     @Override
@@ -416,15 +429,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         /* if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             //ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE }, MY_PERMISSIONS_REQUEST_CAMERA);
         } */
-
-// Check for permissions
-        /* PermittedTask scanPermissionsTask = new PermittedTask(this, Manifest.permission.SEND_SMS) {
-            @Override
-            protected void granted() {
-                presenterMain.onPermissionsGranted();
-            }
-        };
-        scanPermissionsTask.run(); */
 
         /*String admin = getResources().getStringArray(R.array.mode_user_type_values)[2];
         String dispatcher = getResources().getStringArray(R.array.mode_user_type_values)[1];

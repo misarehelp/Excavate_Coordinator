@@ -90,7 +90,7 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
         final Calendar cal_zero = Calendar.getInstance();
         cal_zero.add( Calendar.DAY_OF_YEAR, days_before_now * (-1));
 
-        if ( (calendar.before(cal_zero) && future_recs) || (calendar.after(cal_zero) && !future_recs) ) {
+        if ( ((calendar.before(cal_zero) && future_recs) || (calendar.after(cal_zero) && !future_recs)) && (period != 0)  ) {
             future_recs = !future_recs;
             show_free_rec = future_recs;
             view_listener.onFinishedGetPastFuture(future_recs);
@@ -211,7 +211,7 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
                         // Config answer was got from the server
                         case SERVER_ANSWER_CONFIG_CHANGED:
                             sendModelDataToServer( view_listener, SERVER_GET_CLIENTS, "", "");
-                            view_listener.OnFinishedRefreshViewStatus( message );
+                            //view_listener.OnFinishedRefreshViewStatus( message );
                             return;
                         case DATA_IS_NOT_READY:
                         default:

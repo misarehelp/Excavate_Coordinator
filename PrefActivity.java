@@ -1,33 +1,47 @@
 package ru.volganap.nikolay.haircut_schedule;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.*;
 import android.os.Bundle;
+import android.widget.Toast;
 
 public class PrefActivity extends PreferenceActivity implements Constants {
-    public static final int DEFAULT_ROTATE_POSITION = 0;
-    public static final int DEFAULT_ASPECT_POSITION = 0;
-    public static final int DEFAULT_THEME_POSITION = 0;
+    private static final int DEFAULT_ROTATE_POSITION = 0;
+    private static final int DEFAULT_ASPECT_POSITION = 0;
+    private static final int DEFAULT_THEME_POSITION = 0;
     private static SharedPreferences sharedPrefs;
     static SharedPreferences.Editor ed;
 
     @Override
         protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Intent intent = getIntent();
+        boolean first_start = intent.getBooleanExtra(COMMAND, false);
+
+        Bundle args = new Bundle();
+        args.putBoolean(COMMAND, first_start);
+        PrefFragment prefFragment = new PrefFragment();
+        prefFragment.setArguments(args);
+
         getFragmentManager()
                 .beginTransaction()
-                .replace(android.R.id.content, new PrefFragment())
+                .replace(android.R.id.content, prefFragment)
+                //.replace(android.R.id.content, new PrefFragment())
                 .commit();
         sharedPrefs = getSharedPreferences(PREF_ACTIVITY, Context.MODE_PRIVATE);
     }
 
     public static class PrefFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 
+        boolean first_start;
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             addPreferencesFromResource(R.xml.pref);
+            first_start = getArguments().getBoolean(COMMAND, false);
             initPrefSetup();
         }
 
@@ -112,6 +126,9 @@ public class PrefActivity extends PreferenceActivity implements Constants {
             ed = sharedPrefs.edit();
             ed.putString(key, value);
             ed.apply();
+            if (first_start && key.equals(COMPRESS)) {
+                onDestroy();
+            }
         }
     }
 
