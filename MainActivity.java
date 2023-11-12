@@ -1,6 +1,7 @@
 package ru.volganap.nikolay.haircut_schedule;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -9,6 +10,8 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.viewpager2.widget.ViewPager2;
 
 import android.content.pm.PackageInfo;
@@ -19,22 +22,29 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.DatePicker;
+import android.widget.GridView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.TimeZone;
 
-public class MainActivity extends AppCompatActivity implements Constants, Enums, Contract.ViewMain, Contract.ActivityReciever,
-        DatePickerDialog.OnDateSetListener, Contract.Recycle.MainInterface {
+public class MainActivity extends AppCompatActivity implements Constants, Enums, Contract.ViewMain, Contract.ActivityReciever, Contract.CalendarFragmentToMainActivity,
+        Contract.Recycle.MainInterface {
 
-    private static final String DEFAULT_MAX_RECORDS = "60";
+    private static final String DEFAULT_MAX_RECORDS = "360";
     private static final int MY_PERMISSIONS_REQUEST_SEND_SMS =101;
     private static final String ARCHIVE_DATA = "Архив: ";
     private static final String NEED_RESTART = "Это первый запуск приложения. Для корректной работы приложения его необходимо перезапустить";
@@ -53,8 +63,10 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     private ArrayList<String> d_of_week;
     private int current_page = 0;
     private int theme_type;
+    private int year_backup = 0, month_backup;
     private boolean future_recs = true;
-    int[] sor;
+    // for Calendar
+    private HashMap<String, Integer> cal_hashmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -222,11 +234,10 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
 
     // Fill In Permits User Made List
     @Override
-    public void fillInRecordsList(ArrayList<ArrayList<MainScreenData>> new_data, ArrayList<String> days_interval, ArrayList<String> days_of_week, int[] sum_of_rec) {
+    public void fillInRecordsList(ArrayList<ArrayList<MainScreenData>> new_data, ArrayList<String> days_interval, ArrayList<String> days_of_week ) {
 
         d_interval = days_interval;
         d_of_week = days_of_week;
-        sor = sum_of_rec;
 
         ViewPager2 vpPager = findViewById(R.id.vpPager);
         MainPagerAdapter fragmentStateAdapter = new MainPagerAdapter(this );
@@ -242,9 +253,8 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         new TabLayoutMediator(tabLayout, vpPager, false, (tab, position) -> {
             //tab.view.setBackgroundColor(Color.WHITE);
             if (d_of_week != null && d_of_week.size() != 0) {
-                tab.setText(d_of_week.get(position) + " (" + sor[position] + ")");
+                tab.setText(d_of_week.get(position) + " (" + getNumberOfDayRecords(d_interval.get(position)) + ")");
             }
-
         }).attach();
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
@@ -252,12 +262,15 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
             public void onTabSelected(TabLayout.Tab tab) {
 
                 int pos = tab.getPosition();
-                if (d_of_week != null && d_of_week.size() != 0) {
 
-                    tab.setText(d_of_week.get(pos) + " (" + sor[pos] + ")");
+                if (d_of_week != null && d_of_week.size() != 0) {
+                    int number = getNumberOfDayRecords(d_interval.get(pos));
+
+                    tab.setText(d_of_week.get(pos) + " (" + number + ")");
                     showTvDate(d_interval.get(pos));
+
                     String status = "В этот день нет записей";
-                    if (sor[pos] != 0)  status = "В этот день " + sor[pos] + " записей";
+                    if (number != 0)  status = "В этот день " + number + " записей";
                     refreshMainStatus(status);
                 }
             }
@@ -284,6 +297,16 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         //mainVp2Adapter.notifyItemChanged(0);
     }
 
+    private int getNumberOfDayRecords (String day) {
+        int number;
+        try {
+            number = cal_hashmap.get(day);
+        } catch (Exception e) {
+            number = 0;
+        }
+        return number;
+    }
+
     @Override
     public void onItemClick(String index, String time, String type) {
         setCurrentPage();
@@ -306,14 +329,10 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     private void buttonsSetOnClickListener() {
 
         // show previous day record
-        bt_prev_week.setOnClickListener(v -> {
-            presenterMain.onButtonPreviousWeekClick();
-        });
+        bt_prev_week.setOnClickListener(v -> presenterMain.onButtonPreviousWeekClick());
 
         // show next day record
-        bt_next_week.setOnClickListener(v -> {
-            presenterMain.onButtonNextWeekClick();
-        });
+        bt_next_week.setOnClickListener(v -> presenterMain.onButtonNextWeekClick());
 
         // add a client
         bt_show_hide_free_rs.setOnClickListener(v -> {
@@ -322,24 +341,40 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         });
 
         // Exit a programm
-        bt_exit.setOnClickListener(v -> {
-            finish();
-        });
+        bt_exit.setOnClickListener(v -> finish());
 
         // Show DatePicker dialog
         tv_date.setOnClickListener(v -> {
+            if (null == getSupportFragmentManager().findFragmentByTag("cal")) {
+                getSupportFragmentManager().beginTransaction()
+                        .add(R.id.calendar_container, new CalendarFragment(cal_hashmap, year_backup, month_backup), "cal")
+                        .commit();
+            } else {
+                clearCalendarFragment();
+            }
 
-            Calendar calendar = Calendar.getInstance(TimeZone.getDefault());
-
-            DatePickerDialog dialog = new DatePickerDialog(this, this, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH),
-                    calendar.get(Calendar.DAY_OF_MONTH));
-            dialog.show();
         });
     }
 
     @Override
-    public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+    public void passDataToCalendar(HashMap<String, Integer> cal_hashmap) {
+        this.cal_hashmap = cal_hashmap;
+    }
+
+    @Override
+    public void onDateSet( int year, int monthOfYear, int dayOfMonth) {
         presenterMain.onTextViewDateClick(year, monthOfYear, dayOfMonth);
+        year_backup = year;
+        month_backup = monthOfYear;
+        //clearCalendarFragment();
+    }
+
+    private void clearCalendarFragment() {
+        for (Fragment fragment : getSupportFragmentManager().getFragments()) {
+            if (fragment != null) {
+                getSupportFragmentManager().beginTransaction().remove(fragment).commit();
+            }
+        }
     }
 
    @Override
@@ -440,3 +475,12 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         menu.findItem(R.id.show_archive).setEnabled(cond);
         menu.findItem(R.id.clear_id_counter).setEnabled(cond);
         menu.findItem(R.id.delete_all_permits).setEnabled(cond); */
+
+            /*
+            Calendar calendar = Calendar.getInstance(TimeZone.getDefault());
+
+            DatePickerDialog dialog = new DatePickerDialog(this, this, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH));
+            ((TextView)((LinearLayout)((LinearLayout)((LinearLayout)((DatePicker)dialog.getDatePicker())
+                    .getChildAt(0)).getChildAt(0)).getChildAt(0)).getChildAt(0)).setText("My Date");
+            dialog.show(); */

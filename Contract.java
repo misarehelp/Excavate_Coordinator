@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public interface Contract {
 
@@ -13,7 +14,7 @@ public interface Contract {
 
     interface ViewMain {
         // fill in Records List
-        void fillInRecordsList( ArrayList<ArrayList<MainScreenData>> data, ArrayList<String> days_interval, ArrayList<String> day_of_week, int [] sum_of_rec );
+        void fillInRecordsList( ArrayList<ArrayList<MainScreenData>> data, ArrayList<String> days_interval, ArrayList<String> day_of_week );
         // refresh Main Status
         void refreshMainStatus( String status );
         // Set Archive status for Upper line
@@ -24,6 +25,8 @@ public interface Contract {
         String getMaxRecordsNumber();
         // Show Toast for View
         void showToast (String value);
+        // pass Data To Calendar
+        void passDataToCalendar (HashMap<String, Integer> cal_hashmap);
     }
 
     interface ViewMainLayout {
@@ -84,6 +87,11 @@ public interface Contract {
 
         void changeFreeRecordsState ();
         void changeDaysBefore (int days);
+    }
+
+    // ***************************************************************************************************
+    interface CalendarFragmentToMainActivity {
+        void  onDateSet( int year, int monthOfYear, int dayOfMonth );
     }
 
     // ***************************************************************************************************

@@ -3,6 +3,8 @@ package ru.volganap.nikolay.haircut_schedule;
 import android.content.Context;
 import android.content.Intent;
 
+import java.util.HashMap;
+
 public class PresenterMain implements Contract.PresenterMain, Constants, Enums, Contract.ViewMainLayout {
     private Contract.ViewMain mainView;
     private Contract.ModelMain modelMain;
@@ -106,33 +108,36 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
         mainView.setShowHideButtonVisibility(future_recs);
 
         if (future_recs) {
-            onFinishedGetServerClientData();
+            //onFinishedGetServerClientData();
         } else {
-            modelMain.sendModelDataToServer (  this, SERVER_GET_ARCHIVE_ALL, "", "" );
+            //modelMain.sendModelDataToServer (  this, SERVER_GET_ARCHIVE_ALL, "", "" );
         }
     }
 
     // ************* start  of callbacks passed from ModelMain *******************
-    @Override
-    // method to return Data for UserMadeList
-    public void onFinishedGetServerRecordsData () {
-        if (mainView != null) {
-            modelMain.getDateFromModelMain( this,0, 0,0,0);
-        }
-    }
-
+    //First pass - to get records
     @Override
     public void onFinishedGetServerClientData() {
         modelMain.sendModelDataToServer( this, SERVER_GET_ALL, "", "");
     }
 
     @Override
+    // Second pass - to define period (present or past)
+    public void onFinishedGetServerRecordsData () {
+        if (mainView != null) {
+            mainView.passDataToCalendar( dataParameters.getCalendarHashmap() );
+            modelMain.getDateFromModelMain( this,0, 0,0,0);
+        }
+    }
+
+    @Override
     // method to return Data for UserMadeList
     public void onFinishedBrUserMadeList (ListViewData listViewData) {
         if (mainView != null) {
-            mainView.fillInRecordsList(listViewData.getOutputArray(), listViewData.getDaysInterval(), listViewData.getDaysOfWeek(), listViewData.getSumOfRec());
+            mainView.fillInRecordsList( listViewData.getOutputArray(), listViewData.getDaysInterval(), listViewData.getDaysOfWeek() );
         }
     }
+
     // ************* start  of callbacks passed from ModelMain *******************
     @Override
     // method to return code to  MainActivity
@@ -146,7 +151,10 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
     @Override
     public void onMainActivityResume(){
         String code = dataParameters.getStateCode();
+
         if (!code.equals(DATA_WAS_NOT_CHANGED)) {
+            //there was made some chages in a record
+            mainView.passDataToCalendar( dataParameters.getCalendarHashmap() );
             modelMain.getDateFromModelMain(this,0, 0,0,0);
         }
         OnFinishedRefreshViewStatus(dataParameters.getStateCode());

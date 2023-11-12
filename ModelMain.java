@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 
 public class ModelMain implements Contract.ModelMain, Constants, Enums {
 
@@ -31,7 +32,7 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
     final int IMG_FREE_RECORD = R.drawable.phone_call_green;
     final int IMG_NOTE_RECORD = R.drawable.note_color_2;
     final int IMG_HAIRCUT_RECORD = R.drawable.scissors_2;
-    final int IMG_HAIRCUT_DOUBT = R.drawable.vopros_2;
+    final int IMG_HAIRCUT_DOUBT = R.drawable.vopros_22;
     private boolean show_free_rec = true;
     private boolean color_text_dark;
     private boolean future_recs = true;
@@ -86,19 +87,20 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
         } else {
             calendar.set(year, monthOfYear, dayOfMonth);
         }
+        //calendar.getTime();
 
         final Calendar cal_zero = Calendar.getInstance();
         cal_zero.add( Calendar.DAY_OF_YEAR, days_before_now * (-1));
 
-        if ( ((calendar.before(cal_zero) && future_recs) || (calendar.after(cal_zero) && !future_recs)) && (period != 0)  ) {
+        if ( ((calendar.before(cal_zero) && future_recs) || (calendar.after(cal_zero) && !future_recs)) ) {
+            // check if period was changed from the present to the past or from the past to the present
             future_recs = !future_recs;
             show_free_rec = future_recs;
             view_listener.onFinishedGetPastFuture(future_recs);
         }
-            else {
-                ListViewData listViewData = getArrangedByDaysArray();
-                view_listener.onFinishedBrUserMadeList(listViewData);
-            }
+
+        ListViewData listViewData = getArrangedByDaysArray();
+        view_listener.onFinishedBrUserMadeList(listViewData);
     }
 
     // Convert Json  into Record Data
@@ -158,40 +160,45 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
                     switch ( status ) {
 
                         case DATA_IS_READY:
-                            Date last_record;
-                            Date first_record = new Date();
+
+                            final Calendar cal_zero = Calendar.getInstance();
+                            cal_zero.add( Calendar.DAY_OF_YEAR, -1);
+                            Date date_yesterday = cal_zero.getTime();
+                            Date date_last_record = new Date();
+                            Date date_past_first_record = new Date();
+                            Date date_actual_first_record = new Date();
                             Date now_record = new Date();
-                            String last_rec_date ="";
-                            String first_rec_date ="";
+                            String str_last_rec = "";
+                            String str_past_first_rec = "";
+                            String str_actual_first_rec = "";
                             int old_recs = 0;
 
                             ArrayList<String> array_level_json = new Gson().fromJson(message, ArrayList.class);
 
-                            if (command.equals(SERVER_GET_ALL)) {
-                                last_record = new Date();
-                            } else {
-                                RecordData rd = getFromJsonToRecordData(array_level_json.get(0));
-                                last_record = convertStringtoTimeStamp ( rd.getDate(), rd.getTime());
-                            }
-
                             for (String item : array_level_json) {
                                 RecordData rd = getFromJsonToRecordData(item); // get original (LATIN) Record Data
+
                                 if (!(null == rd)) {
                                     rec_data_array.add(rd);
 
                                     Date current_record = convertStringtoTimeStamp ( rd.getDate(), rd.getTime());
                                     // define the latest record
-                                    if (current_record.after(last_record)) {
-                                        last_record = current_record;
-                                        last_rec_date = rd.getDate();
+                                    if (current_record.after(date_last_record)) {
+                                        date_last_record = current_record;
+                                        str_last_rec = rd.getDate();
+                                    }
+                                    // define the first actual record
+                                    if (current_record.before(date_actual_first_record) || current_record.after(date_yesterday) ) {
+                                        date_actual_first_record = current_record;
+                                        str_actual_first_rec = rd.getDate();
                                     }
                                     // define the earliest record
-                                    if (current_record.before(first_record)) {
-                                        first_record = current_record;
-                                        first_rec_date = rd.getDate();
+                                    if (current_record.before(date_past_first_record)) {
+                                        date_past_first_record = current_record;
+                                        str_past_first_rec = rd.getDate();
                                     }
                                     // define the nummber of past and actual records
-                                    if (current_record.before(now_record)) {
+                                    if (current_record.before(date_yesterday)) {
                                         old_recs++;
                                     }
                                 }
@@ -199,12 +206,8 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
 
                             int len = rec_data_array.size();
                             if (len > 0) {
-                                if (command.equals(SERVER_GET_ALL)) {
-                                    status = status + "Всего " + old_recs + " прошлых и " + (len - old_recs) + " актуальных записей" +
-                                            " с " + first_rec_date + " по " + last_rec_date;
-                                } else {
-                                    status = status + "Всего " + len + " архивных записей, с " + first_rec_date + " по " + last_rec_date;
-                                }
+                                status = status + "Всего " + old_recs + " прошлых (c " + str_past_first_rec + " по настоящее) и " +
+                                        (len - old_recs) + " актуальных записей (с " + str_actual_first_rec + " по " + str_last_rec + ")";
                             }
                             break;
 
@@ -382,7 +385,6 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
         ArrayList<ArrayList<MainScreenData>> period_data = new ArrayList<>();
         ArrayList<String> days_interval = new ArrayList<>();
         ArrayList<String> days_of_week = new ArrayList<>();
-        int[] sum_of_rec = new int[7];
 
         Date record_day = calendar.getTime();
         Calendar start = Calendar.getInstance();
@@ -416,11 +418,10 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
         //get list sorted by time
         for (ArrayList<RecordData> rpl: temp_period_level) {
             ArrayList<RecordData> temp_day_level = getSortedByTimeArray(rpl);
-            sum_of_rec[temp_period_level.indexOf(rpl)] = temp_day_level.size();
             period_data.add( getListRecordData( temp_day_level ) );
         }
 
-        return new ListViewData(period_data, days_interval, days_of_week, sum_of_rec);
+        return new ListViewData(period_data, days_interval, days_of_week);
     }
 
     public Date convertStringtoTimeStamp (String date, String time) {

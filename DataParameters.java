@@ -1,6 +1,7 @@
 package ru.volganap.nikolay.haircut_schedule;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class DataParameters implements Contract.DataParameters {
 
@@ -39,6 +40,7 @@ public class DataParameters implements Contract.DataParameters {
     public int getClientPosition() {
         return client_pos;
     }
+
     //setters
     @Override
     public void setRecordDataArray( ArrayList<RecordData> value) {this.rec_data_array = value;}
@@ -57,6 +59,20 @@ public class DataParameters implements Contract.DataParameters {
     // Get Client position
     public void setClientPosition(int client_pos) {
         this.client_pos = client_pos;
+    }
+
+    // get Calendar HashMap
+    public HashMap<String, Integer> getCalendarHashmap() {
+        HashMap<String, Integer> cal_hashmap = new HashMap<>();
+        for (RecordData rd : rec_data_array) {
+            if (cal_hashmap.containsKey(rd.getDate())) {
+                int i = cal_hashmap.get(rd.getDate());
+                cal_hashmap.put(rd.getDate(), ++i );
+            } else {
+                cal_hashmap.put(rd.getDate(), 1 );
+            }
+        }
+        return cal_hashmap;
     }
 
 }
