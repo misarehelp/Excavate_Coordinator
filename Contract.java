@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 
 public interface Contract {
@@ -14,13 +15,11 @@ public interface Contract {
 
     interface ViewMain {
         // fill in Records List
-        void fillInRecordsList( ArrayList<ArrayList<MainScreenData>> data, ArrayList<String> days_interval, ArrayList<String> day_of_week );
+        void fillInRecordsList( ArrayList<ArrayList<MainScreenData>> data, ArrayList<String> days_interval );
         // refresh Main Status
         void refreshMainStatus( String status );
         // Set Archive status for Upper line
-        void setArchiveStatus (boolean value);
-        // set ShowHide Button Visibility
-        void setShowHideButtonVisibility (boolean value);
+        void setArchiveStatus (Enums.RecordVisibility value);
         // get Max Records Number()
         String getMaxRecordsNumber();
         // Show Toast for View
@@ -37,7 +36,7 @@ public interface Contract {
         //void onFinishedGetDate(ArrayList<String> days_interval);
         void onFinishedGetServerRecordsData();
         void onFinishedGetServerClientData();
-        void onFinishedGetPastFuture(boolean future_recs);
+        void onFinishedGetPastFuture(Enums.RecordVisibility value);
     }
 
 // ***************************************************************************************************
@@ -56,12 +55,6 @@ public interface Contract {
 
         void onBroadcastReceive(Intent intent);
 
-        // method to be called when the Previous Next is clicked
-        void onButtonPreviousWeekClick();
-
-        // method to be called when the Button Next is clicked
-        void onButtonNextWeekClick();
-
         // method to be called when the Button 'Add a record' is clicked
         void onChangeRecordClick(String date, String time, String index, String type, int theme, String command );
 
@@ -69,7 +62,8 @@ public interface Contract {
          void onButtonShowHideFreeRecordsClick();
 
         // method to be called when the Button 'Show clients' is clicked
-        void onTextViewDateClick( int year, int monthOfYear, int dayOfMonth );
+        //void onTextViewDateClick( int year, int monthOfYear, int dayOfMonth );
+        void onTextViewDateClick( Calendar calendar, int dayOfWeek );
 
         void onMainActivityResume();
 
@@ -79,7 +73,8 @@ public interface Contract {
 
     interface ModelMain {
 
-        void getDateFromModelMain ( Contract.ViewMainLayout view_listener, int value, int year, int monthOfYear, int dayOfMonth );
+        //void getDateFromModelMain ( Contract.ViewMainLayout view_listener, int value, int year, int monthOfYear, int dayOfMonth );
+        void getDateFromModelMain ( Contract.ViewMainLayout view_listener, Calendar calendar, int dayOfWeek );
 
         void getFromModelBroadcastReceiver(  Contract.ViewMainLayout view_listener, Intent intent );
 
@@ -91,7 +86,13 @@ public interface Contract {
 
     // ***************************************************************************************************
     interface CalendarFragmentToMainActivity {
-        void  onDateSet( int year, int monthOfYear, int dayOfMonth );
+        void  onDateSet(Calendar calendar, int dayOfWeek, String date_str );
+    }
+
+    // ***************************************************************************************************
+    interface MainActivityToCalendarFragment {
+        void setCalendarHashMap (HashMap<String, Integer> cal_hashmap, Calendar calendar_backup);
+        void syncCalendarDayToPage (int day);
     }
 
     // ***************************************************************************************************

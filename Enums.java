@@ -18,9 +18,16 @@ public interface Enums {
             return value;
         }
     }
+
     enum PhotoType {
         CAMERA,
         REPOSITORY,
         GALLERY;
+    }
+
+    enum RecordVisibility {
+        ARCHIVE,
+        SHOW,
+        HIDE;
     }
 }

@@ -3,6 +3,7 @@ package ru.volganap.nikolay.haircut_schedule;
 import android.content.Context;
 import android.content.Intent;
 
+import java.util.Calendar;
 import java.util.HashMap;
 
 public class PresenterMain implements Contract.PresenterMain, Constants, Enums, Contract.ViewMainLayout {
@@ -10,7 +11,9 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
     private Contract.ModelMain modelMain;
     private Context context;
     private DataParameters dataParameters;
-    private boolean future_recs = true;
+
+    private Calendar calendar_backup = Calendar.getInstance();
+    private int dayOfWeek_backup = 0;
 
     // initiating the objects of View and Model Interface
     public PresenterMain(Contract.ViewMain mainView, Context context, int theme_type, int days_before ) {
@@ -42,7 +45,6 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
     // operations to be performed - Change Server Preferences
     public void onChangeServerPreferences( String max_recs,  int days_before) {
         modelMain.sendModelDataToServer( this, SERVER_CHANGE_CONFIG, Integer.toString(days_before), max_recs);
-        OnFinishedRefreshViewStatus(DATA_REQUEST_PROCESSING);
     }
 
     @Override
@@ -52,26 +54,7 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
     }
 
     @Override
-    public void onButtonPreviousWeekClick() {
-        modelMain.getDateFromModelMain( this,PERIOD * (-1), 0,0,0);
-    }
-
-    @Override
-    public void onButtonNextWeekClick() {
-        modelMain.getDateFromModelMain( this, PERIOD, 0,0,0);
-    }
-
-    @Override
     public void onChangeRecordClick(String date, String time, String index, String type, int theme, String command ) {
-
-        if (!future_recs) {
-            if (index.equals(INDEX_FREE_RECORD) || index.equals(INDEX_NOTE)) {
-                mainView.refreshMainStatus("невозможно занести новую запись в прошлом");
-                return;
-            } else {
-                command = SERVER_SHOW_RECORD;
-            }
-        }
 
         dataParameters.setStateCode(command);
 
@@ -92,26 +75,20 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
     // method to be called when the Button Delete is clicked
     public void onButtonShowHideFreeRecordsClick() {
         modelMain.changeFreeRecordsState();
-        modelMain.getDateFromModelMain( this, 0, 0,0,0);
+        modelMain.getDateFromModelMain( this, calendar_backup, dayOfWeek_backup);
     }
 
     @Override
     // method to be called when the Button Delete is clicked
-    public void onTextViewDateClick( int year, int monthOfYear, int dayOfMonth ) {
-        modelMain.getDateFromModelMain( this, 0, year, monthOfYear, dayOfMonth );
+    public void onTextViewDateClick( Calendar calendar, int dayOfWeek ) {
+        modelMain.getDateFromModelMain( this, calendar, dayOfWeek );
+        calendar_backup.setTime(calendar.getTime());
+        dayOfWeek_backup = dayOfWeek;
     }
 
     @Override
-    public void onFinishedGetPastFuture(boolean future_recs) {
-        this.future_recs = future_recs;
-        mainView.setArchiveStatus(future_recs);
-        mainView.setShowHideButtonVisibility(future_recs);
-
-        if (future_recs) {
-            //onFinishedGetServerClientData();
-        } else {
-            //modelMain.sendModelDataToServer (  this, SERVER_GET_ARCHIVE_ALL, "", "" );
-        }
+    public void onFinishedGetPastFuture(RecordVisibility value) {
+        mainView.setArchiveStatus(value);
     }
 
     // ************* start  of callbacks passed from ModelMain *******************
@@ -126,7 +103,7 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
     public void onFinishedGetServerRecordsData () {
         if (mainView != null) {
             mainView.passDataToCalendar( dataParameters.getCalendarHashmap() );
-            modelMain.getDateFromModelMain( this,0, 0,0,0);
+            //modelMain.getDateFromModelMain( this, null, 0);
         }
     }
 
@@ -134,7 +111,7 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
     // method to return Data for UserMadeList
     public void onFinishedBrUserMadeList (ListViewData listViewData) {
         if (mainView != null) {
-            mainView.fillInRecordsList( listViewData.getOutputArray(), listViewData.getDaysInterval(), listViewData.getDaysOfWeek() );
+            mainView.fillInRecordsList( listViewData.getOutputArray(), listViewData.getDaysInterval() );
         }
     }
 
@@ -155,9 +132,10 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
         if (!code.equals(DATA_WAS_NOT_CHANGED)) {
             //there was made some chages in a record
             mainView.passDataToCalendar( dataParameters.getCalendarHashmap() );
-            modelMain.getDateFromModelMain(this,0, 0,0,0);
+            modelMain.getDateFromModelMain( this, calendar_backup, dayOfWeek_backup);
         }
-        OnFinishedRefreshViewStatus(dataParameters.getStateCode());
+        //OnFinishedRefreshViewStatus(dataParameters.getStateCode());
+        OnFinishedRefreshViewStatus(code);
     }
 
     @Override

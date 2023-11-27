@@ -27,6 +27,7 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
 
     private static String INPUT_CORRECT_NUMBER = "Нужно ввести корректный номер";
     private static String INPUT_CORRECT_NAME_NUMBER = "Нужно ввести корректные имя и номер телефона";
+    private static String INPUT_CORRECT_DATE = "Дата должна быть в формате ДД.ММ.ГГГГ, например: 06.01.2024 ";
     private static String DOUBTABLE_STAMP = "Поставлена метка ненадежного клиента, ";
     private static String NOT_DOUBTABLE_STAMP = "Снята метка ненадежного клиента, ";
     private static String NEED_TO_SAVE = "для внесения изменений необходимо нажать <Изменить>";
@@ -306,7 +307,8 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
         // save new record
         bt_save.setOnClickListener(v -> {
             RecordData  rec_data  = getInputFields(false);
-            presenterRecord.onButtonSave( rec_data );
+            if (checkCorrectDateInput(rec_data.getDate()))
+                presenterRecord.onButtonSave( rec_data );
         });
 
         // delete record
@@ -316,7 +318,9 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
 
         // change record
         bt_change.setOnClickListener(v -> {
-            presenterRecord.onButtonChangeRecord( getInputFields(false) );
+            RecordData  rec_data  = getInputFields(false);
+            if (checkCorrectDateInput(rec_data.getDate()))
+                presenterRecord.onButtonChangeRecord( rec_data );
         });
 
         // add photo from cam to storage
@@ -374,7 +378,8 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
         img_send_sms.setOnClickListener(v -> {
 
             if ( !index.equals(INDEX_FREE_RECORD) ) {
-                et_sms.setText(getResources().getString(R.string.default_sms) + " " + job_type + " " + et_date.getText() + ", в " + et_time.getText());
+                //et_sms.setText(getResources().getString(R.string.default_sms) + " " + job_type + " " + et_date.getText() + ", в " + et_time.getText());
+                et_sms.setText(getResources().getString(R.string.default_sms) + " " + et_date.getText() + ", в " + et_time.getText());
                 int ll_sms_visible = ll_text_sms.getVisibility();
                 if ( ll_sms_visible == View.GONE ) ll_text_sms.setVisibility(View.VISIBLE);
                     else ll_text_sms.setVisibility(View.GONE);
@@ -416,6 +421,15 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
         if ( isNamePhoneFull ()) {
             filename = et_client_name.getText().toString() + "-" + et_client_phone.getText().toString() + "-" + date;
             callbackToActivity.doPictureAction(picture_type, filename);
+        }
+    }
+
+    private boolean checkCorrectDateInput( String date) {
+        if (date.contains(".") && date.length() == 10) {
+            return true;
+        } else {
+            showToast(INPUT_CORRECT_DATE );
+            return false;
         }
     }
 

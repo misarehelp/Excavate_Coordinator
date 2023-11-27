@@ -3,6 +3,7 @@ package ru.volganap.nikolay.haircut_schedule;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
+import android.app.FragmentManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,12 +11,14 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.viewpager2.widget.ViewPager2;
 
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -28,6 +31,8 @@ import android.widget.DatePicker;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,25 +53,30 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     private static final int MY_PERMISSIONS_REQUEST_SEND_SMS =101;
     private static final String ARCHIVE_DATA = "Архив: ";
     private static final String NEED_RESTART = "Это первый запуск приложения. Для корректной работы приложения его необходимо перезапустить";
+    private static final String PASS_RECORDS_INEDITABLE = "Невозможно занести новую запись в прошлом";
 
     private SharedPreferences sharedPrefs;
     private SharedPreferences.OnSharedPreferenceChangeListener prefChangeListener;
 
     // Main activity layout
-    private Button bt_prev_week, bt_next_week, bt_show_hide_free_rs, bt_exit;
+    private Button bt_restart, bt_show_hide_free_rs, bt_exit;
     private TextView tv_date;
     private TabLayout tabLayout;
     private BroadcastReceiver mainBroadcastReceiver;
     Contract.PresenterMain presenterMain;
-
     private ArrayList<String> d_interval;
-    private ArrayList<String> d_of_week;
-    private int current_page = 0;
+
+    //private int current_page = 0;
     private int theme_type;
-    private int year_backup = 0, month_backup;
-    private boolean future_recs = true;
+    private int page = 0;
+
+    private RecordVisibility recordVisibility;
     // for Calendar
+    private Calendar calendar_backup = Calendar.getInstance();
     private HashMap<String, Integer> cal_hashmap;
+    private Fragment calendarFragment = new CalendarFragment();
+
+    private Contract.MainActivityToCalendarFragment callbackToCalendarFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,11 +87,10 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
 
         setContentView(R.layout.activity_main);
         tv_date = findViewById(R.id.tv_date);
-
+        float new_size = (float) (tv_date.getTextSize() * 0.5);
+        tv_date.setTextSize(new_size);
         /* StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build()); */
-
-        Log.d(LOG_TAG, "Main - onCreate ");
         // Init Main activity layout
         initMainViewLayout();
 
@@ -91,12 +100,22 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         autoRequestAllPermissions();
         // Init BroadcastReceiver
         initBroadcastReceiver();
+
+        try {
+            callbackToCalendarFragment = (Contract.MainActivityToCalendarFragment) calendarFragment;
+            getSupportFragmentManager().beginTransaction()
+                    .add(R.id.calendar_container, calendarFragment)
+                    .commit();
+
+        } catch (ClassCastException e) {
+            throw new ClassCastException(this.toString()
+                    + " must implement Contract.RecordActivity.ToRecordFragment");
+        }
     }
 
     private void initMainViewLayout() {
         // Main ViewLayout
-        bt_prev_week = findViewById(R.id.bt_prev_week);
-        bt_next_week = findViewById(R.id.bt_next_week);
+        bt_restart = findViewById(R.id.bt_restart);
         bt_show_hide_free_rs = findViewById(R.id.bt_show_hide_free_rs);
         bt_exit = findViewById(R.id.bt_exit);
     }
@@ -143,15 +162,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
                 break;
             case 5:
                 theme = THEME_DARK_BIG;
-                break;
-            case 6:
-                theme = THEME_NEUTRAL_SMALL;
-                break;
-            case 7:
-                theme = THEME_NEUTRAL_MEDIUM;
-                break;
-            case 8:
-                theme = THEME_NEUTRAL_BIG;
                 break;
         }
 
@@ -206,7 +216,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
                 }
             }
         }
-
     }
 
     @Override
@@ -234,10 +243,9 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
 
     // Fill In Permits User Made List
     @Override
-    public void fillInRecordsList(ArrayList<ArrayList<MainScreenData>> new_data, ArrayList<String> days_interval, ArrayList<String> days_of_week ) {
+    public void fillInRecordsList(ArrayList<ArrayList<MainScreenData>> new_data, ArrayList<String> days_interval ) {
 
         d_interval = days_interval;
-        d_of_week = days_of_week;
 
         ViewPager2 vpPager = findViewById(R.id.vpPager);
         MainPagerAdapter fragmentStateAdapter = new MainPagerAdapter(this );
@@ -250,51 +258,67 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         vpPager.setOffscreenPageLimit(2);
 
         tabLayout = findViewById(R.id.tabLayout);
+        int theme_pos = Integer.parseInt(sharedPrefs.getString(THEME, "0"));
+
+        switch (theme_pos) {
+            case 3:
+            case 4:
+            case 5:
+                tabLayout.setTabTextColors( getResources().getColor(R.color.tabTextColorDark), getResources().getColor(R.color.colorGenTextDark));
+                tabLayout.setBackgroundColor(getResources().getColor(R.color.tabBackgroundDark));
+                tabLayout.setSelectedTabIndicatorColor(getResources().getColor(R.color.tabIndicatorColorDark));
+                break;
+            default:
+                tabLayout.setTabTextColors( getResources().getColor(R.color.colorTableBgroundDark_2), getResources().getColor(R.color.tabTextColorLight));
+                tabLayout.setBackgroundColor(getResources().getColor(R.color.tabBackgroundLight));
+                tabLayout.setSelectedTabIndicatorColor(getResources().getColor(R.color.tabIndicatorColorLight));
+        }
+
         new TabLayoutMediator(tabLayout, vpPager, false, (tab, position) -> {
             //tab.view.setBackgroundColor(Color.WHITE);
-            if (d_of_week != null && d_of_week.size() != 0) {
-                tab.setText(d_of_week.get(position) + " (" + getNumberOfDayRecords(d_interval.get(position)) + ")");
-            }
+            tab.setText(WEEKDAYS[position] + " (" + getNumberOfDayRecords(d_interval.get(position)) + ")");
         }).attach();
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
 
-                int pos = tab.getPosition();
+                int position = tab.getPosition();
+                int number = getNumberOfDayRecords(d_interval.get(position));
+                showTvDate(d_interval.get(position));
+                int day = Integer.parseInt(d_interval.get(position).substring(0,2));
 
-                if (d_of_week != null && d_of_week.size() != 0) {
-                    int number = getNumberOfDayRecords(d_interval.get(pos));
+                callbackToCalendarFragment.syncCalendarDayToPage(day);
 
-                    tab.setText(d_of_week.get(pos) + " (" + number + ")");
-                    showTvDate(d_interval.get(pos));
-
-                    String status = "В этот день нет записей";
-                    if (number != 0)  status = "В этот день " + number + " записей";
-                    refreshMainStatus(status);
+                String add_status;
+                switch (number) {
+                    case 1:
+                        add_status = number + " запись";
+                        break;
+                    case 2, 3, 4:
+                        add_status = number + " записи";
+                        break;
+                    case 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27:
+                        add_status = number + " записей";
+                        break;
+                    case 0:
+                    default:
+                        add_status = " нет записей";
                 }
+
+                refreshMainStatus("В этот день " + add_status);
             }
 
             @Override
-            public void onTabUnselected(TabLayout.Tab tab) {
-                //int pos = tab.getPosition();
-            }
+            public void onTabUnselected(TabLayout.Tab tab) {}
 
             @Override
-            public void onTabReselected(TabLayout.Tab tab) {
-                //int pos = tab.getPosition();
-            }
+            public void onTabReselected(TabLayout.Tab tab) {}
         });
 
-        //TabLayout.Tab tab = tabLayout.getTabAt(current_page);
-        TabLayout.Tab tab = tabLayout.getTabAt(current_page);
+        TabLayout.Tab tab = tabLayout.getTabAt(page);
         tab.select();
-        showTvDate(d_interval.get(current_page));
-
-        /* mainVp2Adapter.setValues(new_data);
-        vpPager.setCurrentItem(0);
-        mainVp2Adapter.notifyDataSetChanged(); */
-        //mainVp2Adapter.notifyItemChanged(0);
+        showTvDate(d_interval.get(page));
     }
 
     private int getNumberOfDayRecords (String day) {
@@ -309,71 +333,77 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
 
     @Override
     public void onItemClick(String index, String time, String type) {
-        setCurrentPage();
         String command;
         int num_index = Integer.parseInt(index);
 
-        if (num_index < 0) {
-            command = SERVER_ADD_RECORD;
+        if (recordVisibility == RecordVisibility.ARCHIVE) {
+            if (index.equals(INDEX_FREE_RECORD) || index.equals(INDEX_NOTE)) {
+                refreshMainStatus(PASS_RECORDS_INEDITABLE);
+                return;
+            } else {
+                command = SERVER_SHOW_RECORD;
+            }
+
         } else {
-            command = SERVER_CHANGE_RECORD;
+            if (num_index < 0) {
+                command = SERVER_ADD_RECORD;
+            } else {
+                command = SERVER_CHANGE_RECORD;
+            }
         }
 
         presenterMain.onChangeRecordClick(tv_date.getText().toString(), time, index, type, theme_type, command);
-    }
-
-    private void setCurrentPage() {
-        current_page = tabLayout.getSelectedTabPosition();
+        //clearCalendarFragment();
     }
 
     private void buttonsSetOnClickListener() {
-
-        // show previous day record
-        bt_prev_week.setOnClickListener(v -> presenterMain.onButtonPreviousWeekClick());
-
-        // show next day record
-        bt_next_week.setOnClickListener(v -> presenterMain.onButtonNextWeekClick());
-
-        // add a client
-        bt_show_hide_free_rs.setOnClickListener(v -> {
-            setCurrentPage();
-            presenterMain.onButtonShowHideFreeRecordsClick();
-        });
-
+        // restart load from server
+        bt_restart.setOnClickListener(v -> presenterMain.onPermissionsGranted());
+        // Show/hide free records
+        bt_show_hide_free_rs.setOnClickListener(v -> presenterMain.onButtonShowHideFreeRecordsClick());
         // Exit a programm
         bt_exit.setOnClickListener(v -> finish());
-
         // Show DatePicker dialog
-        tv_date.setOnClickListener(v -> {
-            if (null == getSupportFragmentManager().findFragmentByTag("cal")) {
-                getSupportFragmentManager().beginTransaction()
-                        .add(R.id.calendar_container, new CalendarFragment(cal_hashmap, year_backup, month_backup), "cal")
-                        .commit();
-            } else {
-                clearCalendarFragment();
-            }
+        tv_date.setOnClickListener(v -> changeCalendarState());
+    }
 
-        });
+    public void changeCalendarState() {
+        if (calendarFragment.isHidden()) {
+            showCalendarFragment();
+        } else {
+            hideCalendarFragment();
+        }
+    }
+
+    public void showCalendarFragment() {
+        getSupportFragmentManager().beginTransaction()
+                .show(calendarFragment)
+                .commit();
+    }
+
+    private void hideCalendarFragment() {
+        getSupportFragmentManager().beginTransaction()
+                .hide(calendarFragment)
+                .commit();
     }
 
     @Override
     public void passDataToCalendar(HashMap<String, Integer> cal_hashmap) {
         this.cal_hashmap = cal_hashmap;
+        callbackToCalendarFragment.setCalendarHashMap(cal_hashmap, calendar_backup);
     }
 
     @Override
-    public void onDateSet( int year, int monthOfYear, int dayOfMonth) {
-        presenterMain.onTextViewDateClick(year, monthOfYear, dayOfMonth);
-        year_backup = year;
-        month_backup = monthOfYear;
-        //clearCalendarFragment();
-    }
+    public void onDateSet( Calendar calendar, int dayOfWeek, String date_str) {
 
-    private void clearCalendarFragment() {
-        for (Fragment fragment : getSupportFragmentManager().getFragments()) {
-            if (fragment != null) {
-                getSupportFragmentManager().beginTransaction().remove(fragment).commit();
-            }
+        page = dayOfWeek;
+
+        if (null != d_interval && d_interval.contains(date_str)) {
+            TabLayout.Tab tab = tabLayout.getTabAt(page);
+            tab.select();
+        } else {
+            presenterMain.onTextViewDateClick(calendar, dayOfWeek);
+            calendar_backup.setTime(calendar.getTime());
         }
     }
 
@@ -417,7 +447,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
 
     @Override
     public void refreshMainStatus(String status) {
-        String state = (future_recs) ? status : ARCHIVE_DATA + status;
+        String state = (recordVisibility == RecordVisibility.ARCHIVE) ? ARCHIVE_DATA + status :  status;
         ((TextView) findViewById(R.id.tv_main_state)).setText(state);
     }
 
@@ -427,13 +457,9 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     }
 
     @Override
-    public void setArchiveStatus(boolean value) {
-        future_recs = value;
-    }
-
-    @Override
-    public void setShowHideButtonVisibility(boolean value) {
-        bt_show_hide_free_rs.setVisibility( value ?  View.VISIBLE : View.INVISIBLE);
+    public void setArchiveStatus(RecordVisibility value) {
+        recordVisibility = value;
+        bt_show_hide_free_rs.setVisibility( (recordVisibility == RecordVisibility.ARCHIVE) ?  View.INVISIBLE : View.VISIBLE);
     }
 
     @Override

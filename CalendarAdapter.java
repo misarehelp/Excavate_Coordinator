@@ -30,7 +30,6 @@ public class CalendarAdapter extends BaseAdapter {
 
       year = c.get(Calendar.YEAR);
       month = c.get(Calendar.MONTH);
-      //day = c.get(Calendar.DAY_OF_MONTH);
    }
 
    public void setDay (int day) {
@@ -75,32 +74,30 @@ public class CalendarAdapter extends BaseAdapter {
             tv_day.setBackgroundColor(Color.YELLOW);
          }
 
-         String date = position + "." + (month+1) + "." + year;
-         if (position < 10) {
-            date = "0" + date;
-         }
-
+         String date = getDateString(position);
          if (cal_hashmap.containsKey(date)) {
             tv_event.setText("(" + cal_hashmap.get(date).toString() + ")");
             tv_event.setBackgroundColor(Color.LTGRAY);
          }
       }
-
       return v;
+   }
+
+   public String getDateString (int day) {
+      String day_s = "" + day;
+      if (day < 10) day_s = "0" + day_s;
+
+      String month_s = "" + (month + 1);
+      if (month < 9) month_s = "0" + month_s;
+
+      return day_s + "." + month_s + "." + year;
    }
 
    public static int getMonthDays(int month, int year) {
       int daysInMonth ;
-      if (month == 4 || month == 6 || month == 9 || month == 11) {
-         daysInMonth = 30;
-      }
-      else {
-         if (month == 2) {
-            daysInMonth = (year % 4 == 0) ? 29 : 28;
-         } else {
-            daysInMonth = 31;
-         }
-      }
+      if (month == 4 || month == 6 || month == 9 || month == 11) daysInMonth = 30;
+         else if (month == 2) daysInMonth = (year % 4 == 0) ? 29 : 28;
+                  else daysInMonth = 31;
 //        Log.d("FIRSTDAY","days "+daysInMonth);
       return daysInMonth;
    }

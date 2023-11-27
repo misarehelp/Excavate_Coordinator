@@ -2,18 +2,15 @@ package ru.volganap.nikolay.haircut_schedule;
 
 interface Constants {
     String LOG_TAG = "myLogs";
-    String[] WEEKDAYS = {"Вск", "Пон", "Втр", "Срд", "Чтв", "Птн", "Сбт"};
+    String[] WEEKDAYS = {"Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"};
     int PERIOD = 7;
     //****************  Themes  ***********************************************************************
-    public int THEME_LIGHT_SMALL = R.style.Theme_LightGreyStyle_1;
-    public int THEME_LIGHT_MEDIUM = R.style.Theme_LightGreyStyle_2;
-    public int THEME_LIGHT_BIG = R.style.Theme_LightGreyStyle_3;
-    public int THEME_DARK_SMALL = R.style.Theme_DarkStyle_1;
-    public int THEME_DARK_MEDIUM = R.style.Theme_DarkStyle_2;
-    public int THEME_DARK_BIG = R.style.Theme_DarkStyle_3;
-    public int THEME_NEUTRAL_SMALL = R.style.Theme_DarkStyle_1;
-    public int THEME_NEUTRAL_MEDIUM = R.style.Theme_DarkStyle_2;
-    public int THEME_NEUTRAL_BIG = R.style.Theme_DarkStyle_3;
+    int THEME_LIGHT_SMALL = R.style.Theme_LightGreyStyle_1;
+    int THEME_LIGHT_MEDIUM = R.style.Theme_LightGreyStyle_2;
+    int THEME_LIGHT_BIG = R.style.Theme_LightGreyStyle_3;
+    int THEME_DARK_SMALL = R.style.Theme_DarkStyle_1;
+    int THEME_DARK_MEDIUM = R.style.Theme_DarkStyle_2;
+    int THEME_DARK_BIG = R.style.Theme_DarkStyle_3;
 
     //******************************************************************************************************
     String ROTATE = "pic_rotate";
@@ -46,7 +43,6 @@ interface Constants {
     String TYPE_CODE = "type_code";
     String INDEX_FREE_RECORD = "-1";
     String INDEX_NOTE = "-2";
-    String INDEX_PAST = "-3";
     String INDEX_QUESTION = "-4";
 //******************************************************************************************************
     int RECORD_HOST = 0;
@@ -60,8 +56,8 @@ interface Constants {
     String SERVER_DELETE_RECORD = "server_delete_record";
 
     String SERVER_GET_ALL = "server_get_all";
-    String SERVER_GET_ARCHIVE_ALL = "server_get_archive_all";
     String SERVER_GET_ARCHIVE_BY_PHONE = "server_get_archive_by_phone";
+    String SERVER_GET_ARCHIVE_ALL = "server_get_archive_all";
     String SERVER_GET_BY_DATE = "server_get_by_date";
     String SERVER_DELETE_ALL = "server_delete_all";
     String SERVER_GET_NEXT_ID  = "server_get_next_id";
@@ -79,6 +75,5 @@ interface Constants {
     String PREF_ACTIVITY = "pref_activity";
     String RECORDS_MAX_NUMBER = "records_max_number";
     String DAYS_BEFORE_NOW = "days_before_now";
-    //String URL_ADDR = "https://volganap.ru/hair_cut/index_hc.php";
-    String URL_ADDR = "https://volganap.ru/hair_cut/index_hc_v2.php";
+    String URL_ADDR = "https://volganap.ru/hair_cut/index_hc.php";
 }

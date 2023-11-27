@@ -11,7 +11,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 
 public class ModelMain implements Contract.ModelMain, Constants, Enums {
 
@@ -20,6 +19,7 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
     private String END_WORK_TIME = "20:00";
     private int TIME_MINUTE_STEP = 30;
     private String FREE_PERIOD = "* свободно *";
+    private String CLIENT_BASE_LOADED = "База клиентов загружена";
 
     final int COLOR_FREE_RECORD_DARK = R.color.colorFreeRecordDark;
     final int COLOR_NOTE_RECORD_DARK = R.color.colorNoteRecordDark;
@@ -34,8 +34,8 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
     final int IMG_HAIRCUT_RECORD = R.drawable.scissors_2;
     final int IMG_HAIRCUT_DOUBT = R.drawable.vopros_22;
     private boolean show_free_rec = true;
+    RecordVisibility recordVisibility = RecordVisibility.SHOW;
     private boolean color_text_dark;
-    private boolean future_recs = true;
     private int days_before_now;
     private Context context;
     DataParameters dataParameters;
@@ -54,9 +54,6 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
             case THEME_LIGHT_SMALL:
             case THEME_LIGHT_MEDIUM:
             case THEME_LIGHT_BIG:
-            //case THEME_NEUTRAL_SMALL:
-            //case THEME_NEUTRAL_MEDIUM:
-            //case THEME_NEUTRAL_BIG:
                 color_text_dark = false;
                 break;
             case THEME_DARK_SMALL:
@@ -80,26 +77,28 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
 
     // Do  Model Logic to get Date
     @Override
-    public void getDateFromModelMain( Contract.ViewMainLayout view_listener, int period, int year, int monthOfYear, int dayOfMonth ) {
+    public void getDateFromModelMain( Contract.ViewMainLayout view_listener, Calendar calendar_value, int value ) {
 
-        if (year == 0) {
-            calendar.add(Calendar.DAY_OF_MONTH, period);
+        if (null == calendar_value) {
+            calendar.add(Calendar.DAY_OF_MONTH, value);
         } else {
-            calendar.set(year, monthOfYear, dayOfMonth);
+            calendar.setTime(calendar_value.getTime());
         }
-        //calendar.getTime();
 
         final Calendar cal_zero = Calendar.getInstance();
         cal_zero.add( Calendar.DAY_OF_YEAR, days_before_now * (-1));
 
-        if ( ((calendar.before(cal_zero) && future_recs) || (calendar.after(cal_zero) && !future_recs)) ) {
+        if ( calendar.before(cal_zero) ) {
             // check if period was changed from the present to the past or from the past to the present
-            future_recs = !future_recs;
-            show_free_rec = future_recs;
-            view_listener.onFinishedGetPastFuture(future_recs);
+            recordVisibility = RecordVisibility.ARCHIVE;
+        } else if (show_free_rec) {
+                recordVisibility = RecordVisibility.SHOW;
+            } else {
+                recordVisibility = RecordVisibility.HIDE;
         }
 
-        ListViewData listViewData = getArrangedByDaysArray();
+        view_listener.onFinishedGetPastFuture(recordVisibility);
+        ListViewData listViewData = getArrangedByDaysArray(value);
         view_listener.onFinishedBrUserMadeList(listViewData);
     }
 
@@ -153,6 +152,7 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
                     }
 
                     dataParameters.setClientDataArray(client_data_array);
+                    view_listener.OnFinishedRefreshViewStatus(CLIENT_BASE_LOADED);
                     view_listener.onFinishedGetServerClientData();
 
                 }  else {// Getting Record Data after Command GET_BY_DATE or GET_ALL
@@ -167,7 +167,7 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
                             Date date_last_record = new Date();
                             Date date_past_first_record = new Date();
                             Date date_actual_first_record = new Date();
-                            Date now_record = new Date();
+
                             String str_last_rec = "";
                             String str_past_first_rec = "";
                             String str_actual_first_rec = "";
@@ -224,9 +224,9 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
 
                     dataParameters.setRecordDataArray(rec_data_array);
                     view_listener.onFinishedGetServerRecordsData();
+                    view_listener.OnFinishedRefreshViewStatus( status );
                 }
 
-                view_listener.OnFinishedRefreshViewStatus( status );
             }
         }, 0);
     }
@@ -247,7 +247,7 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
          MainScreenData mainScreenData;
 
          // Hide free records
-         if (!show_free_rec) {
+         if (recordVisibility != RecordVisibility.SHOW) {
              for (int i = 0; i < rda_size; i++) {
                  mainScreenData = new MainScreenData();
                  mainScreenData.setType(INDEX_FREE_RECORD);
@@ -379,30 +379,26 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
         return rda;
     }
 
-    public ListViewData getArrangedByDaysArray () {
+    public ListViewData getArrangedByDaysArray (int dayOfWeek) {
 
         ArrayList<RecordData> rda = dataParameters.getRecordDataArray();
         ArrayList<ArrayList<MainScreenData>> period_data = new ArrayList<>();
         ArrayList<String> days_interval = new ArrayList<>();
-        ArrayList<String> days_of_week = new ArrayList<>();
 
         Date record_day = calendar.getTime();
         Calendar start = Calendar.getInstance();
-        start.setTime(record_day);
         Calendar end = Calendar.getInstance();
+        start.setTime(record_day);
         end.setTime(record_day);
-        end.add(Calendar.DATE, PERIOD );
+        start.add(Calendar.DATE, dayOfWeek * (-1) );
+        end.add(Calendar.DATE, PERIOD - dayOfWeek);
 
         ArrayList<ArrayList<RecordData>> temp_period_level = new ArrayList<>();
 
         for (Date date = start.getTime(); start.before(end); start.add(Calendar.DATE, 1), date = start.getTime()) {
 
             String current_date = convertDateToString(date);
-
-            int ordinal = start.get(Calendar.DAY_OF_WEEK);
-            days_of_week.add(WEEKDAYS[ordinal-1]);
             days_interval.add(current_date);
-
             ArrayList<RecordData> day_level = new ArrayList<>();
 
             for (RecordData rd: rda) {
@@ -421,7 +417,7 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
             period_data.add( getListRecordData( temp_day_level ) );
         }
 
-        return new ListViewData(period_data, days_interval, days_of_week);
+        return new ListViewData(period_data, days_interval );
     }
 
     public Date convertStringtoTimeStamp (String date, String time) {
