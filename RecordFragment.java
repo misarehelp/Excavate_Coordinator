@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import androidx.fragment.app.Fragment;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,6 +30,7 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
     private static String DOUBTABLE_STAMP = "Поставлена метка ненадежного клиента, ";
     private static String NOT_DOUBTABLE_STAMP = "Снята метка ненадежного клиента, ";
     private static String NEED_TO_SAVE = "для внесения изменений необходимо нажать <Изменить>";
+    private static String NEED_TO_WAIT = "...необходимо дождаться сохранения данных на сервере...";
     private static String FIRST_SAVE_RECORD = "Сначала сохраните запись, затем, после повторного входа, можно добавить фото";
     private Contract.RecordFragmentToRecordActivity callbackToActivity;
 
@@ -42,12 +42,13 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
     private ImageView img_last_call, img_send_sms, img_call_client, img_check_client;
     private EditText et_client_name, et_client_phone, et_date, et_time, et_price, et_record_comment, et_sms;
     private Button bt_save, bt_change, bt_del_rec, bt_add_cam_photo, bt_add_file_photo, bt_delete_photo, bt_exit, bt_sms, bt_put_data_to_base;
-    private TextView tv_client_name, tv_sms;
+    private TextView tv_client_name, tv_sms, tv_record_state;
     private CheckBox cb_photo;
     private Spinner job_spinner, duration_spinner;
     private String job_type = "";
     private String duration_value = "";
-    private String record_id;
+    private int client_id = NOT_IN_CLIENT_BASE;
+    private byte byte_id;
 
     public RecordFragment ( String index, String date, String time, String type ) {
         this.index = index;
@@ -64,7 +65,7 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
             callbackToActivity = (Contract.RecordFragmentToRecordActivity) context;
 
         } catch (ClassCastException e) {
-            throw new ClassCastException(context.toString() + " must implement Contract.RecordFragmentToRecordActivity");
+            throw new ClassCastException(context + " must implement Contract.RecordFragmentToRecordActivity");
         }
     }
 
@@ -76,8 +77,7 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.record_holder, container, false);
-        return view;
+        return inflater.inflate(R.layout.record_holder, container, false);
     }
 
     @Override
@@ -85,6 +85,7 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
 
         tv_client_name = view.findViewById(R.id.tv_client_name);
         tv_sms = view.findViewById(R.id.tv_sms);
+        tv_record_state = view.findViewById(R.id.tv_record_state);
 
         job_spinner = view.findViewById(R.id.job_spinner);
         duration_spinner = view.findViewById(R.id.duration_spinner);
@@ -154,9 +155,10 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
     }
 
     @Override
-    public void onGetClientDataToFragment( String name, String phone) {
-        et_client_name.setText( name );
-        et_client_phone.setText( phone);
+    public void onGetClientDataToFragment( ClientData value) {
+        et_client_name.setText( value.getName() );
+        et_client_phone.setText( value.getPhone());
+        client_id = value.getId();
     }
 
     @Override
@@ -184,13 +186,13 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
 
     private void initFullRecordViewLayout() {
         // Full Record Layout
-        ArrayAdapter<String> job_spin_adapter = new ArrayAdapter<String>( context, R.layout.spinner_item, getResources().getStringArray(R.array.job_type_values));
+        ArrayAdapter<String> job_spin_adapter = new ArrayAdapter<>( context, R.layout.spinner_item, getResources().getStringArray(R.array.job_type_values));
         job_spin_adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         job_spinner.setAdapter(job_spin_adapter);
         job_spinner.setOnItemSelectedListener( this );
         job_spinner.setSelection(0);
 
-        ArrayAdapter<String> duration_spin_adapter = new ArrayAdapter<String>(context, R.layout.spinner_item, getResources().getStringArray(R.array.duration_entries));
+        ArrayAdapter<String> duration_spin_adapter = new ArrayAdapter<>(context, R.layout.spinner_item, getResources().getStringArray(R.array.duration_entries));
         duration_spin_adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         duration_spinner.setAdapter(duration_spin_adapter);
         duration_spinner.setOnItemSelectedListener(this);
@@ -215,7 +217,8 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
     public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
         switch (parent.getId()) {
             case R.id.job_spinner:
-                job_type = (String) parent.getItemAtPosition(position);
+                //job_type = (String) parent.getItemAtPosition(position);
+                job_type = Integer.toString(position);
                 break;
             case R.id.duration_spinner:
                 String [] duration_array = getResources().getStringArray(R.array.duration_values);
@@ -231,33 +234,42 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
         //job_type = (String) parent.getItemAtPosition(0);
     }
 
+    // Fill In Records fields
     @Override
     public void fillRecordInfoFields ( RecordData value ) {
 
         et_date.setText(value.getDate());
         et_time.setText(value.getTime());
+        et_client_name.setText(value.getName());
+
+        String duration_value = value.getDuration();
+        int pos = Arrays.asList(getResources().getStringArray(R.array.duration_values)).indexOf(duration_value);
+        duration_spinner.setSelection(pos);
 
         if (type.equals(INDEX_NOTE)) {
             initNoteRecordViewLayout();
-            et_client_name.setText(value.getName());
 
         } else {
-            onGetClientDataToFragment(value.getName(), value.getPhone());
-            String duration_value = value.getDuration();
-            int pos = Arrays.asList(getResources().getStringArray(R.array.duration_values)).indexOf(duration_value);
 
-            duration_spinner.setSelection(pos);
-            job_spinner.setSelection(((ArrayAdapter<String>)job_spinner.getAdapter()).getPosition( value.getJob() ));
+            et_client_phone.setText( value.getPhone());
+            //job_spinner.setSelection(((ArrayAdapter<String>)job_spinner.getAdapter()).getPosition( value.getJob() ));
+            job_spinner.setSelection(Integer.parseInt(value.getJob()));
             et_price.setText(value.getPrice());
             et_record_comment.setText(value.getComment());
 
-            setClientHasPictureField(value.getPicBefore());
-            if (value.getRemind()) {
+            byte_id = value.getBitsIndex();
+            boolean state = value.getIndexBit(byte_id, BIT_HAS_PIC);
+
+            setClientHasPictureField(state);
+
+            if (value.getIndexBit(byte_id,BIT_REMIND_SENT)) {
                 img_send_sms.setImageResource(R.drawable.sms_sent);
                 tv_sms.setText(R.string.tv_sms_was_sent);
             }
-            record_id = value.getId();
-            if ( null != record_id && record_id.equals(INDEX_QUESTION) ) {
+
+            client_id = value.getId();
+
+            if ( value.getIndexBit(byte_id, BIT_QUESTION) ) {
                 img_check_client.setImageResource(R.drawable.bad_client);
             }
         }
@@ -265,9 +277,11 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
 
     @Override
     public void setRecordButtonsVisibility (String code) {
-        // Check for if a new permit
+        //
+        tv_record_state.setText("");
         switch ( code) {
             case SERVER_ADD_RECORD:
+                bt_save.setVisibility(View.VISIBLE);
                 bt_change.setVisibility(View.INVISIBLE);
                 bt_del_rec.setVisibility(View.INVISIBLE);
                 img_call_client.setVisibility(View.GONE);
@@ -278,17 +292,26 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
             case SERVER_CHANGE_RECORD:
             case SERVER_DELETE_RECORD:
 
+                bt_change.setVisibility(View.VISIBLE);
+                bt_del_rec.setVisibility(View.VISIBLE);
                 bt_save.setVisibility(View.INVISIBLE);
                 break;
+
             case INDEX_NOTE:
                 img_last_call.setVisibility(View.GONE);
                 bt_add_cam_photo.setVisibility(View.GONE);
                 bt_add_file_photo.setVisibility(View.GONE);
                 bt_delete_photo.setVisibility(View.GONE);
+                img_check_client.setVisibility(View.GONE);
                 break;
+
+            case SERVER_WAIT_FOR_ANSWER:
+                bt_exit.setVisibility(View.INVISIBLE);
+                tv_record_state.setText(NEED_TO_WAIT);
 
             case SERVER_SHOW_RECORD:
             default:
+                bt_exit.setVisibility(View.VISIBLE);
                 bt_save.setVisibility(View.INVISIBLE);
                 bt_change.setVisibility(View.INVISIBLE);
                 bt_del_rec.setVisibility(View.INVISIBLE);
@@ -308,19 +331,19 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
         bt_save.setOnClickListener(v -> {
             RecordData  rec_data  = getInputFields(false);
             if (checkCorrectDateInput(rec_data.getDate()))
-                presenterRecord.onButtonSave( rec_data );
-        });
-
-        // delete record
-        bt_del_rec.setOnClickListener(v -> {
-            presenterRecord.onButtonDeleteRecord();
+                presenterRecord.onButtonChangeRecord( rec_data, SERVER_ADD_RECORD );
         });
 
         // change record
         bt_change.setOnClickListener(v -> {
             RecordData  rec_data  = getInputFields(false);
             if (checkCorrectDateInput(rec_data.getDate()))
-                presenterRecord.onButtonChangeRecord( rec_data );
+                presenterRecord.onButtonChangeRecord( rec_data, SERVER_CHANGE_RECORD );
+        });
+
+        // delete record
+        bt_del_rec.setOnClickListener(v -> {
+            presenterRecord.onButtonChangeRecord( null, SERVER_DELETE_RECORD );
         });
 
         // add photo from cam to storage
@@ -357,12 +380,14 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
 
         // add a client number from a phone book
         img_check_client.setOnClickListener(v -> {
-            if ( null != record_id && record_id.equals(INDEX_QUESTION) ) {
-                record_id = "";
+            if ( new RecordData().getIndexBit(byte_id, BIT_QUESTION) ) {
+
+                byte_id = changeIndexBit(byte_id, BIT_QUESTION, false);
                 img_check_client.setImageResource(R.drawable.good_client);
                 showToast(NOT_DOUBTABLE_STAMP + NEED_TO_SAVE);
+
             } else {
-                record_id = INDEX_QUESTION;
+                byte_id = changeIndexBit(byte_id, BIT_QUESTION, true);
                 img_check_client.setImageResource(R.drawable.bad_client);
                 showToast(DOUBTABLE_STAMP + NEED_TO_SAVE );
             }
@@ -378,7 +403,7 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
         img_send_sms.setOnClickListener(v -> {
 
             if ( !index.equals(INDEX_FREE_RECORD) ) {
-                //et_sms.setText(getResources().getString(R.string.default_sms) + " " + job_type + " " + et_date.getText() + ", в " + et_time.getText());
+
                 et_sms.setText(getResources().getString(R.string.default_sms) + " " + et_date.getText() + ", в " + et_time.getText());
                 int ll_sms_visible = ll_text_sms.getVisibility();
                 if ( ll_sms_visible == View.GONE ) ll_text_sms.setVisibility(View.VISIBLE);
@@ -442,9 +467,12 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
             return true;
     }
 
+    // Read data of Input fields
     private RecordData  getInputFields( boolean remind) {
 
         RecordData rd = new RecordData();
+        rd.setId(client_id);
+
         rd.setName(et_client_name.getText().toString());
         rd.setPhone(et_client_phone.getText().toString());
         rd.setDate(et_date.getText().toString());
@@ -453,9 +481,10 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
         rd.setJob(job_type);
         rd.setPrice(et_price.getText().toString());
         rd.setComment(et_record_comment.getText().toString());
-        rd.setRemind(remind);
-        rd.setPicBefore(cb_photo.isChecked());
-        rd.setId(record_id);
+
+        byte_id = changeIndexBit(byte_id, BIT_REMIND_SENT, remind);
+        byte_id = changeIndexBit(byte_id, BIT_HAS_PIC, cb_photo.isChecked());
+        rd.setBitsIndex(byte_id);
 
         return rd;
     }
@@ -468,6 +497,15 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
     @Override
     public void setLastCallText(String status) {
         et_client_phone.setText( status );
+    }
+
+    public byte changeIndexBit (byte b_id, int pos, boolean value) {
+        if (value) {
+            b_id |= 1 << pos;
+        } else {
+            b_id &= ~(1 << pos);
+        }
+        return b_id;
     }
 
     @Override

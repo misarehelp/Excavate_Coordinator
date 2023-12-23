@@ -43,8 +43,15 @@ interface Constants {
     String TYPE_CODE = "type_code";
     String INDEX_FREE_RECORD = "-1";
     String INDEX_NOTE = "-2";
-    String INDEX_QUESTION = "-4";
+
 //******************************************************************************************************
+    int BIT_NOTE = 0;
+    int BIT_HAS_PIC = 1;
+    int BIT_REMIND_SENT = 2;
+    int BIT_QUESTION = 3;
+    int BIT_CLIENT_BASE = 4;
+    int NOT_IN_CLIENT_BASE = -1;
+    //******************************************************************************************************
     int RECORD_HOST = 0;
     int CLIENT_LIST_HOST = 2;
     int HISTORY_LIST_HOST = 3;
@@ -58,14 +65,14 @@ interface Constants {
     String SERVER_GET_ALL = "server_get_all";
     String SERVER_GET_ARCHIVE_BY_PHONE = "server_get_archive_by_phone";
     String SERVER_GET_ARCHIVE_ALL = "server_get_archive_all";
-    String SERVER_GET_BY_DATE = "server_get_by_date";
     String SERVER_DELETE_ALL = "server_delete_all";
-    String SERVER_GET_NEXT_ID  = "server_get_next_id";
+    String SERVER_WAIT_FOR_ANSWER = "server_wait_for_answer";
     String SERVER_CHANGE_CONFIG = "server_change_config";
     String SERVER_ANSWER_CONFIG_CHANGED = "The config is changed,";
 //******************************************************************************************************
     String SERVER_ADD_CLIENT = "server_add_client";
     String SERVER_GET_CLIENTS = "server_get_clients";
+    String SERVER_GET_CLIENT_ID = "server_get_client_id";
     String GET_CLIENT_DATA_FROM_BASE = "get_client_data_from_base";
     String SHOW_CLIENT_JOB = "show_client_job";
     String SERVER_DELETE_CLIENT = "server_delete_client";
@@ -75,5 +82,6 @@ interface Constants {
     String PREF_ACTIVITY = "pref_activity";
     String RECORDS_MAX_NUMBER = "records_max_number";
     String DAYS_BEFORE_NOW = "days_before_now";
-    String URL_ADDR = "https://volganap.ru/hair_cut/index_hc.php";
+    //String URL_ADDR = "https://volganap.ru/hair_cut/index_hc.php";
+    String URL_ADDR = "https://volganap.ru/hair_cut/index_hc2.php";
 }

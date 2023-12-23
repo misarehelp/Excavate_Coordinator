@@ -14,10 +14,12 @@ public class HistoryRecycleAdapter extends RecyclerView.Adapter<HistoryRecycleAd
     private final Contract.Recycle.HistoryInterface clickListener;
     private final LayoutInflater inflater;
     private ArrayList<RecordData> data = new ArrayList<>();
+    private String [] job_array;
 
     HistoryRecycleAdapter(Context context ) {
         this.inflater = LayoutInflater.from(context);
         this.clickListener = (Contract.Recycle.HistoryInterface) context;
+        job_array = context.getResources().getStringArray(R.array.job_type_values);
     }
 
     public void swap(ArrayList<RecordData> datas)  {
@@ -42,10 +44,13 @@ public class HistoryRecycleAdapter extends RecyclerView.Adapter<HistoryRecycleAd
         if (recordData != null) {
 
             holder.tv_date.setText(recordData.getDate());
-            holder.tv_job.setText(recordData.getJob());
+            holder.tv_job.setText(job_array[Integer.parseInt(recordData.getJob())]);
             holder.tv_job_price.setText(recordData.getPrice());
             holder.tv_client_comment.setText(recordData.getComment());
-            holder.tv_client_has_photo.setText(Boolean.toString(recordData.getPicBefore()));
+            //String has_photo = (recordData.getPicWish().equals(TRUE_VALUE)) ? "да" : "нет";
+            String has_photo = recordData.getIndexBit(recordData.getBitsIndex(), BIT_HAS_PIC) ? "да" : "нет";
+            //holder.tv_client_has_photo.setText(recordData.getPicWish());
+            holder.tv_client_has_photo.setText(has_photo);
         }
     }
 
@@ -69,7 +74,8 @@ public class HistoryRecycleAdapter extends RecyclerView.Adapter<HistoryRecycleAd
             view.setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 RecordData recordData = data.get(position);
-                if (recordData.getPicBefore()) {
+                if (recordData.getIndexBit(recordData.getBitsIndex(), BIT_HAS_PIC)) {
+                //if (recordData.getPicWish().equals(TRUE_VALUE)) {
                     String filename = recordData.getName() + "-" + recordData.getPhone() + "-" + recordData.getDate();
                     clickListener.onItemClick(filename);
                 }

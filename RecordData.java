@@ -1,9 +1,33 @@
 package ru.volganap.nikolay.haircut_schedule;
 
 
+import com.google.gson.annotations.SerializedName;
+
 public class RecordData {
-   private String id, name, phone, date, time, duration, job, price, comment;
-   private boolean pic_bef, pic_aft, pic_wish, remind;
+   @SerializedName("i")
+   private int client_id;
+   @SerializedName("n")
+   private String name;
+   @SerializedName("ph")
+   private String phone;
+   @SerializedName("dt")
+   private String date;
+   @SerializedName("t")
+   private String time;
+   @SerializedName("du")
+   private String duration;
+   @SerializedName("j")
+   private String job;
+   @SerializedName("pr")
+   private String price;
+   @SerializedName("c")
+   private String comment;
+   //@SerializedName("pw")
+   //private String pic_wish;
+   //@SerializedName("r")
+   //private String remind;
+   @SerializedName("b")
+   private byte bits_index;
 
    private transient String index;
 
@@ -14,7 +38,10 @@ public class RecordData {
    String getIndex() {
       return index;
    }
-   String getId() {return id;}
+   byte getBitsIndex() {
+      return bits_index;
+   }
+   int getId() {return client_id;}
    String getName() {return name;}
    String getPhone() {return phone;}
    String getDate() {
@@ -37,24 +64,21 @@ public class RecordData {
       return comment;
    }
 
-   boolean getPicBefore() {
-      return pic_bef;
-   }
-   boolean getPicAfter() {
-      return pic_aft;
-   }
-   boolean getPicWish() {
+   /*String  getPicWish() {
       return pic_wish;
    }
-   boolean getRemind() {
+   String getRemind() {
       return remind;
-   }
+   } */
 
    //setters
    void setIndex (String index) {
       this.index = index;
+}
+   void setBitsIndex (byte bits_index) {
+      this.bits_index = bits_index;
    }
-   void setId( String id) {this.id = id;}
+   void setId( int client_id) {this.client_id = client_id;}
    void setName( String name) {this.name = name;}
    void setPhone( String phone) {this.phone = phone;}
    void setDate( String  date) {this.date = date;}
@@ -65,8 +89,11 @@ public class RecordData {
    void setPrice( String price) {this.price = price;}
    void setComment( String comment) {this.comment = comment;}
 
-   void setPicBefore( boolean pic_bef) {this.pic_bef = pic_bef;}
-   void setPicAfter( boolean pic_aft) {this.pic_aft = pic_aft;}
-   void setPicWish( boolean pic_wish) {this.pic_wish = pic_wish;}
-   void setRemind( boolean remind) {this.remind = remind;}
+   public boolean getIndexBit (byte b_id, int pos) {
+      int mask = 1 << pos; // equivalent of 2 to the nth power
+      return (b_id & mask) != 0;
+   }
+
+   /* void setPicWish( String pic_wish) {this.pic_wish = pic_wish;}
+   void setRemind( String remind) {this.remind = remind;} */
 }

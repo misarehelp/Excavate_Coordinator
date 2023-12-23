@@ -30,82 +30,113 @@ class ModelRecord implements Contract.ModelRecord, Constants {
       this.dataParameters = dataParameters;
    }
 
-   // Convert Record into Json
-   private String getFromRecordDataToJson(RecordData  rec_data ) {
-      rd = rec_data;
-      return new Gson().toJson(rec_data);
-   }
-
-   @Override
-   public void addRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener, RecordData rec_data ) {
-      //
-      code = SERVER_ADD_RECORD;
+   private void convertAndSendJsonData(Contract.ModelRecord.OnPresenterRecordCallback listener, String command, String dateID, RecordData  rec_data ) {
 
       if (isInputFieldsCorrect( rec_data.getDate(), rec_data.getTime(), rec_data.getDuration() )) {
-         sendRecordDataToServer( SERVER_ADD_RECORD, "", getFromRecordDataToJson(rec_data) );
+
+         String name, phone;
+         name = rec_data.getName();
+         phone = rec_data.getPhone();
+
+         if ( rec_data.getId() > NOT_IN_CLIENT_BASE) {
+            rec_data.setName("");
+            rec_data.setPhone("");
+         }
+
+         sendRecordDataToServer( command, dateID, new Gson().toJson(rec_data) );
+
+         if ( rec_data.getId() > NOT_IN_CLIENT_BASE) {
+            rec_data.setName(name);
+            rec_data.setPhone(phone);
+         }
+
+         rd = rec_data;
+
       } else {
          listener.onShowToast(context.getResources().getString(R.string.incorrect_duration));
       }
    }
 
    @Override
-   public void changeRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener, RecordData  rec_data  ) {
+   public void changeRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener, RecordData  rec_data, String command_code  ) {
       //
-      code = SERVER_CHANGE_RECORD;
+      code = command_code;
 
-      if (isInputFieldsCorrect( rec_data.getDate(), rec_data.getTime(), rec_data.getDuration() )) {
-         sendRecordDataToServer( SERVER_CHANGE_RECORD, id_date, getFromRecordDataToJson(rec_data) );
-      } else {
-         listener.onShowToast(context.getResources().getString(R.string.incorrect_duration));
+      switch (code) {
+         // Record Data was changed on the server
+         case SERVER_ADD_RECORD:
+            convertAndSendJsonData(listener, code, "",  rec_data);
+            break;
+
+         case SERVER_CHANGE_RECORD:
+            convertAndSendJsonData(listener, code, id_date,  rec_data);
+            break;
+
+         case SERVER_DELETE_RECORD:
+            sendRecordDataToServer( code, id_date, "");
+            break;
+
+         default:
+            break;
       }
-   }
-
-   @Override
-   public void deleteRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener ) {
-      //
-      code = SERVER_DELETE_RECORD;
-      sendRecordDataToServer( SERVER_DELETE_RECORD, id_date, "" );
    }
 
    void sendRecordDataToServer ( String command, String dateID, String value) {
       new OkHttpRequest().serverGetback( context, command, dateID, value );
    }
 
-   public boolean isInputFieldsCorrect (String s_date, String s_time, String s_duration) {
+   public boolean isInputFieldsCorrect (String s_new_date, String s_new_time, String s_new_duration) {
 
       ArrayList<RecordData> rda_date = new ArrayList<>();
       for (RecordData rda_base: dataParameters.getRecordDataArray()) {
-         if (rda_base.getDate().equals(s_date)) {
+         if (rda_base.getDate().equals(s_new_date)) {
             rda_date.add(rda_base);
          }
       }
 
       String s_position = Integer.toString(dataParameters.getRecordPosition());
 
-      Calendar calendar_current = Calendar.getInstance();
-      Calendar calendar_next = Calendar.getInstance();
+      Calendar calendar_new_start = Calendar.getInstance();
+      Calendar calendar_new_end = Calendar.getInstance();
+      Calendar calendar_next_start = Calendar.getInstance();
+      Calendar calendar_next_end = Calendar.getInstance();
       SimpleDateFormat time_formatter = new SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
 
       boolean fit = true;
       try {
-         Date time_current = time_formatter.parse(s_time);
-         int duration_int = Integer.parseInt(s_duration);
+         Date new_time = time_formatter.parse(s_new_time);
+         int duration_int = Integer.parseInt(s_new_duration);
 
          for (RecordData rda_item: rda_date) {
             Date time_next = time_formatter.parse(rda_item.getTime());
+            int duration_next = Integer.parseInt(rda_item.getDuration());
 
-            if (time_current.equals(time_next) && !s_position.equals(rda_item.getIndex())) {
-               return false;
-            }
+            // check if the position of a new record equals itself
+            if ( !s_position.equals(rda_item.getIndex())) {
 
-            if (time_current.before(time_next)) {
+               calendar_new_start.setTime(new_time);
+               calendar_new_end.setTime(new_time);
+               calendar_new_end.add(Calendar.MINUTE, duration_int);
 
-               calendar_current.setTime(time_current);
-               calendar_current.add(Calendar.MINUTE, duration_int - 5);
-               calendar_next.setTime(time_next);
+               calendar_next_start.setTime(time_next);
+               calendar_next_end.setTime(time_next);
+               calendar_next_end.add(Calendar.MINUTE, duration_next);
 
-               if (calendar_current.after(calendar_next)) {
-                  fit = false;
+               // check if the start/end of new record equals the current one
+               if (calendar_new_start.equals(calendar_next_start) || calendar_new_end.equals(calendar_next_end)) {
+                  return false;
+               }
+               // check if the a new record intersects the current one
+               if (calendar_new_start.after(calendar_next_start) && calendar_new_start.before(calendar_next_end)) {
+                  return false;
+               }
+
+               if (calendar_new_end.after(calendar_next_start) && calendar_new_end.before(calendar_next_end)) {
+                  return false;
+               }
+
+               if (calendar_new_start.before(calendar_next_start) && calendar_new_end.after(calendar_next_end)) {
+                  return false;
                }
             }
          }
@@ -121,6 +152,7 @@ class ModelRecord implements Contract.ModelRecord, Constants {
    public RecordData getSelectedRecordData () {
       rd = dataParameters.getRecordDataArray().get(dataParameters.getRecordPosition());
       id_date = rd.getDate() + DELIMITER + rd.getTime();
+
       return rd;
    }
 
@@ -142,43 +174,40 @@ class ModelRecord implements Contract.ModelRecord, Constants {
 
    @Override
    public void getFromModelBroadcastReceiver( Contract.ModelRecord.OnPresenterRecordCallback act_listener, Intent intent ) {
-      new Handler().postDelayed(new Runnable() {
-         @Override
-         public void run() {
+      new Handler().postDelayed(() -> {
 
-            String status = intent.getStringExtra(SENDER);
-            ArrayList<RecordData> rec_data_array = dataParameters.getRecordDataArray();
+         String status = intent.getStringExtra(SENDER);
+         ArrayList<RecordData> rec_data_array = dataParameters.getRecordDataArray();
 
-            if (status.equals(DATA_WAS_SAVED)) {
-               switch (code) {
-                  // Record Data was changed on the server
-                  case SERVER_ADD_RECORD:
-                     rec_data_array.add(rd);
-                     break;
+         if (status.equals(DATA_WAS_SAVED)) {
+            switch (code) {
+               // Record Data was changed on the server
+               case SERVER_ADD_RECORD:
+                  rec_data_array.add(rd);
+                  break;
 
-                  case SERVER_DELETE_RECORD:
-                     rec_data_array.remove(dataParameters.getRecordPosition());
-                     break;
+               case SERVER_DELETE_RECORD:
+                  rec_data_array.remove(dataParameters.getRecordPosition());
+                  break;
 
-                  case SERVER_CHANGE_RECORD:
-                     int pos = dataParameters.getRecordPosition();
-                     rec_data_array.set( pos, rd );
-                     break;
-                  //Config Data has got or confirmation of saving Depline Data to Server
-                  default:
-                     break;
-               }
-
-               dataParameters.setRecordDataArray(rec_data_array);
-               act_listener.onShowToast(DATA_WAS_SAVED);
-               act_listener.onCloseRecordAction();
-
-            } else {
-               act_listener.onShowToast(DATA_WAS_NOT_SAVED);
+               case SERVER_CHANGE_RECORD:
+                  int pos = dataParameters.getRecordPosition();
+                  rec_data_array.set( pos, rd );
+                  break;
+               //Config Data has got or confirmation of saving Depline Data to Server
+               default:
+                  break;
             }
 
-            dataParameters.setStateCode(status);
+            dataParameters.setRecordDataArray(rec_data_array);
+            act_listener.onShowToast(DATA_WAS_SAVED);
+            act_listener.onCloseRecordAction();
+
+         } else {
+            act_listener.onShowToast(DATA_WAS_NOT_SAVED);
          }
+
+         dataParameters.setStateCode(status);
       }, 0);
    }
 
@@ -203,10 +232,10 @@ class ModelRecord implements Contract.ModelRecord, Constants {
       int callDuration = managedCursor.getInt(duration); */
       managedCursor.close();
 
-      int dircode = Integer.parseInt(callType);
+      /*int dircode = Integer.parseInt(callType);
       if (dircode == CallLog.Calls.INCOMING_TYPE) {
          //Incoming calls
-      }
+      } */
 
       listener.onFinishedGetLastCall( phone_number );
    }

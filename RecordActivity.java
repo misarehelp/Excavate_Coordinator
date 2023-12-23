@@ -12,15 +12,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
@@ -51,13 +48,9 @@ public class RecordActivity extends AppCompatActivity implements Constants, Enum
     private String filename;
     private SharedPreferences sharedPrefs;
 
-    private ActivityResultLauncher<Intent> launchGaleryActivity = registerForActivityResult( new ActivityResultContracts.StartActivityForResult(), result -> {
-        getBitmapFromIntent (result, REQUEST_GALLERY);
-    });
+    private ActivityResultLauncher<Intent> launchGaleryActivity = registerForActivityResult( new ActivityResultContracts.StartActivityForResult(), result -> getBitmapFromIntent (result, REQUEST_GALLERY));
 
-    private ActivityResultLauncher<Intent> launchCameraActivity = registerForActivityResult( new ActivityResultContracts.StartActivityForResult(), result -> {
-        getBitmapFromIntent (result, REQUEST_CAMERA);
-    });
+    private ActivityResultLauncher<Intent> launchCameraActivity = registerForActivityResult( new ActivityResultContracts.StartActivityForResult(), result -> getBitmapFromIntent (result, REQUEST_CAMERA));
 
     private void getBitmapFromIntent (androidx.activity.result.ActivityResult result, int request) {
 
@@ -156,7 +149,7 @@ public class RecordActivity extends AppCompatActivity implements Constants, Enum
 
     @Override
     public void passClientDataToActivity(String name, String phone) {
-        callback_HR_toClientFragment.onGetClientDataToFragment( name, phone );
+        callback_HR_toClientFragment.onGetClientDataToFragment( new ClientData(name, phone) );
         vp_record.setCurrentItem(CLIENT_TAB);
     }
 
@@ -256,7 +249,8 @@ public class RecordActivity extends AppCompatActivity implements Constants, Enum
                 if (intent != null) {
                     String command = intent.getStringExtra(COMMAND);
 
-                    if (command.equals(SERVER_ADD_CLIENT) || command.equals(SERVER_CHANGE_CLIENT) || command.equals(SERVER_DELETE_CLIENT)) {
+                    if (command.equals(SERVER_ADD_CLIENT) || command.equals(SERVER_CHANGE_CLIENT) || command.equals(SERVER_DELETE_CLIENT)
+                            || command.equals(SERVER_GET_CLIENT_ID)) {
                         callbackToClientFragmentBroadcast.onBroadcastReceive(intent);
 
                     } else if (command.equals(SERVER_GET_ARCHIVE_BY_PHONE)) {
@@ -278,11 +272,11 @@ public class RecordActivity extends AppCompatActivity implements Constants, Enum
     }
 
     @Override
-    public void onGetClientDataToActivity ( String name, String phone, boolean show_hystory ) {
+    public void onGetClientDataToActivity ( ClientData clientData, boolean show_hystory ) {
         if (show_hystory) {
-            callback_HR_toHistoryFragment.onGetClientDataToFragment(name, phone);
+            callback_HR_toHistoryFragment.onGetClientDataToFragment(clientData);
         } else {
-            callback_HR_toRecordFragment.onGetClientDataToFragment(name, phone);
+            callback_HR_toRecordFragment.onGetClientDataToFragment(clientData);
             vp_record.setCurrentItem(RECORD_TAB);
         }
     }

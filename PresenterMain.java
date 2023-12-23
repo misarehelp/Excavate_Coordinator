@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 
 import java.util.Calendar;
-import java.util.HashMap;
 
 public class PresenterMain implements Contract.PresenterMain, Constants, Enums, Contract.ViewMainLayout {
     private Contract.ViewMain mainView;
@@ -103,7 +102,6 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
     public void onFinishedGetServerRecordsData () {
         if (mainView != null) {
             mainView.passDataToCalendar( dataParameters.getCalendarHashmap() );
-            //modelMain.getDateFromModelMain( this, null, 0);
         }
     }
 
@@ -134,7 +132,7 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
             mainView.passDataToCalendar( dataParameters.getCalendarHashmap() );
             modelMain.getDateFromModelMain( this, calendar_backup, dayOfWeek_backup);
         }
-        //OnFinishedRefreshViewStatus(dataParameters.getStateCode());
+
         OnFinishedRefreshViewStatus(code);
     }
 

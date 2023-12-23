@@ -43,7 +43,6 @@ public interface Contract {
 // methods defined in Main Presenter
     interface PresenterMain {
 
-        //void onChangeSharedPrefs( String department_user, boolean dispatcher_on );
         void onChangeSharedPrefs( String key );
         void onChangeDaysBefore( int days );
 
@@ -62,7 +61,6 @@ public interface Contract {
          void onButtonShowHideFreeRecordsClick();
 
         // method to be called when the Button 'Show clients' is clicked
-        //void onTextViewDateClick( int year, int monthOfYear, int dayOfMonth );
         void onTextViewDateClick( Calendar calendar, int dayOfWeek );
 
         void onMainActivityResume();
@@ -73,7 +71,6 @@ public interface Contract {
 
     interface ModelMain {
 
-        //void getDateFromModelMain ( Contract.ViewMainLayout view_listener, int value, int year, int monthOfYear, int dayOfMonth );
         void getDateFromModelMain ( Contract.ViewMainLayout view_listener, Calendar calendar, int dayOfWeek );
 
         void getFromModelBroadcastReceiver(  Contract.ViewMainLayout view_listener, Intent intent );
@@ -91,7 +88,7 @@ public interface Contract {
 
     // ***************************************************************************************************
     interface MainActivityToCalendarFragment {
-        void setCalendarHashMap (HashMap<String, Integer> cal_hashmap, Calendar calendar_backup);
+        void setCalendarHashMap (HashMap<String, Integer> cal_hashmap);
         void syncCalendarDayToPage (int day);
     }
 
@@ -104,7 +101,7 @@ public interface Contract {
 
 // ***************************************************************************************************
     interface RecordActivityToSomeFragment {
-        void  onGetClientDataToFragment( String name, String phone );
+        void  onGetClientDataToFragment( ClientData value );
     }
     // ***************************************************************************************************
     interface RecordActivityToPhotoFragment {
@@ -133,7 +130,7 @@ public interface Contract {
 
     // ***************************************************************************************************
     interface ClientFragmentToRecordActivity {
-        void onGetClientDataToActivity(String name, String phone, boolean show_hystory);
+        void onGetClientDataToActivity(ClientData value, boolean show_hystory);
     }
 
     // ***************************************************************************************************
@@ -161,12 +158,8 @@ public interface Contract {
     interface PresenterRecord {
 
         void onBroadcastReceive(Intent intent);
-        // method to be called when the Button 'Save' is clicked
-        void onButtonSave( RecordData rec_data );
-        // method to be called when the Button 'Delete Record' is clicked
-        void onButtonChangeRecord(RecordData rec_data );
-        // method to be called when the Button 'Delete Record' is clicked
-        void onButtonDeleteRecord();
+        // method to be called when the Button 'Add, Change or Delete Record' is clicked
+        void onButtonChangeRecord(RecordData rec_data, String command_code );
         // method to be called when the Button 'Add phone from a phone book' is clicked
         void onButtonAddLastCall();
         // method to be called when the Button 'Make Call' is clicked
@@ -188,9 +181,7 @@ public interface Contract {
             void onFinishedGetLastCall( String value );
         }
 
-        void addRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener, RecordData rec_data );
-        void changeRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener, RecordData rec_data  );
-        void deleteRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener );
+        void changeRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener, RecordData rec_data, String command_code  );
         void getLastIncomingCall ( Contract.ModelRecord.OnPresenterRecordCallback listener );
         void getFromModelBroadcastReceiver( Contract.ModelRecord.OnPresenterRecordCallback act_listener, Intent intent );
         RecordData getSelectedRecordData ();
@@ -226,7 +217,7 @@ interface PresenterListClient {
             void onUpdateRecycleData( ArrayList<ClientData> client_data_array );
         }
 
-        void addClient ( ClientData client );
+        void getClientID ( ClientData client );
         void deleteClient ( int position );
         void changeClient ( int position, ClientData client );
         void getFromModelBroadcastReceiver( Contract.ModelClientList.OnPresenterClientListCallback act_listener, Intent intent );

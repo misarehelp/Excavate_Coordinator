@@ -38,7 +38,9 @@ import android.widget.Toast;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.google.gson.Gson;
 
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -72,7 +74,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
 
     private RecordVisibility recordVisibility;
     // for Calendar
-    private Calendar calendar_backup = Calendar.getInstance();
     private HashMap<String, Integer> cal_hashmap;
     private Fragment calendarFragment = new CalendarFragment();
 
@@ -390,7 +391,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     @Override
     public void passDataToCalendar(HashMap<String, Integer> cal_hashmap) {
         this.cal_hashmap = cal_hashmap;
-        callbackToCalendarFragment.setCalendarHashMap(cal_hashmap, calendar_backup);
+        callbackToCalendarFragment.setCalendarHashMap(cal_hashmap);
     }
 
     @Override
@@ -403,7 +404,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
             tab.select();
         } else {
             presenterMain.onTextViewDateClick(calendar, dayOfWeek);
-            calendar_backup.setTime(calendar.getTime());
         }
     }
 

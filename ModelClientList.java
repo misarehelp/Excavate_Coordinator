@@ -26,11 +26,25 @@ class ModelClientList implements Contract.ModelClientList, Constants {
    }
 
    @Override
-   public void addClient ( ClientData client ) {
+   public void getClientID( ClientData client ) {
+      clientData = client;
+      code = SERVER_GET_CLIENT_ID;
+      sendClientDataToServer( code, "", "");
+   }
+   public void addClient ( int id) {
       //
       code = SERVER_ADD_CLIENT;
-      clientData = client;
-      sendClientDataToServer( code, "", getFromClientDataToJson( client ));
+      /* int id;
+      if (null == dataParameters.getClientDataArray()) {
+         id = 0;
+      } else {
+         int cl_base_size = dataParameters.getClientDataArray().size();
+         id = dataParameters.getClientDataArray().get(cl_base_size-1).getId() + 1;
+      } */
+
+      //clientData.setId(Integer.toString(id));
+      clientData.setId(id);
+      sendClientDataToServer( code, "", getFromClientDataToJson( clientData ));
    }
 
    @Override
@@ -63,42 +77,53 @@ class ModelClientList implements Contract.ModelClientList, Constants {
 
    @Override
    public void getFromModelBroadcastReceiver( Contract.ModelClientList.OnPresenterClientListCallback act_listener, Intent intent ) {
-      new Handler().postDelayed(new Runnable() {
-         @Override
-         public void run() {
+      new Handler().postDelayed(() -> {
 
-            ArrayList<ClientData> client_data_array;
-            client_data_array = dataParameters.getClientDataArray();
+         ArrayList<ClientData> client_data_array;
+         client_data_array = dataParameters.getClientDataArray();
 
-            String status = intent.getStringExtra(SENDER);
+         String status = intent.getStringExtra(SENDER);
 
-            if (status.equals(DATA_WAS_SAVED)) {
-               switch (code) {
-                  // Record Data was changed on the server
-                  case SERVER_ADD_CLIENT:
-                     client_data_array.add(clientData);
-                     break;
+         if (status.equals(DATA_WAS_SAVED)) {
+            switch (code) {
+               // Record Data was changed on the server
 
-                  case SERVER_DELETE_CLIENT:
-                     client_data_array.remove(dataParameters.getClientPosition());
-                     break;
+               case SERVER_GET_CLIENT_ID:
+                  client_data_array.remove(dataParameters.getClientPosition());
+                  break;
 
-                  case SERVER_CHANGE_CLIENT:
-                     int pos = dataParameters.getClientPosition();
-                     client_data_array.set( pos, clientData );
-                     break;
-                  //Config Data has got or confirmation of saving Depline Data to Server
-                  default:
-                     break;
-               }
+               case SERVER_ADD_CLIENT:
+                  client_data_array.add(clientData);
+                  break;
 
-               dataParameters.setClientDataArray(client_data_array);
-               act_listener.onShowToast(DATA_WAS_SAVED);
-               act_listener.onUpdateRecycleData(client_data_array);
+               case SERVER_DELETE_CLIENT:
+                  client_data_array.remove(dataParameters.getClientPosition());
+                  break;
 
-            } else {
-               act_listener.onShowToast(DATA_WAS_NOT_SAVED);
+               case SERVER_CHANGE_CLIENT:
+                  int pos = dataParameters.getClientPosition();
+                  client_data_array.set( pos, clientData );
+                  break;
+               //Config Data has got or confirmation of saving Depline Data to Server
+               default:
+                  break;
             }
+
+            dataParameters.setClientDataArray(client_data_array);
+            act_listener.onShowToast(DATA_WAS_SAVED);
+            act_listener.onUpdateRecycleData(client_data_array);
+
+         }
+
+         if (status.equals(SERVER_GET_CLIENT_ID)) {
+            String id_string = intent.getStringExtra(MESSAGE);
+            if (null != id_string) {
+               addClient(Integer.parseInt(id_string));
+            } else {
+               act_listener.onShowToast("ID клиента не получен, повторите попытку добавления клиента");
+            }
+         } else {
+            act_listener.onShowToast(DATA_WAS_NOT_SAVED);
          }
       }, 0);
    }

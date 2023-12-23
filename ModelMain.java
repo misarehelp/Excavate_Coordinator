@@ -38,6 +38,7 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
     private boolean color_text_dark;
     private int days_before_now;
     private Context context;
+    private String [] job_array;
     DataParameters dataParameters;
     final Calendar calendar = Calendar.getInstance();
 
@@ -48,6 +49,7 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
         calendar.setTime( new Date() );
         this.dataParameters = dataParameters;
         this.days_before_now = days_before;
+        job_array = context.getResources().getStringArray(R.array.job_type_values);
 
         switch (theme_position) {
             default:
@@ -116,117 +118,122 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
     @Override
     public void getFromModelBroadcastReceiver( Contract.ViewMainLayout view_listener, Intent intent) {
 
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
+        new Handler().postDelayed(() -> {
 
-                ArrayList<RecordData> rec_data_array = new ArrayList<>();
-                ArrayList<ClientData> client_data_array = new ArrayList<>();
+            ArrayList<RecordData> rec_data_array = new ArrayList<>();
+            ArrayList<ClientData> client_data_array = new ArrayList<>();
 
-                String message = intent.getStringExtra(MESSAGE);
-                String status = intent.getStringExtra(SENDER);
-                String command = intent.getStringExtra(COMMAND);
+            String message = intent.getStringExtra(MESSAGE);
+            String status = intent.getStringExtra(SENDER);
+            String command = intent.getStringExtra(COMMAND);
 
-                // Getting Client Data after Command SERVER_GET_CLIENTS
-                if (command.equals(SERVER_GET_CLIENTS)) {
+            // Getting Client Data after Command SERVER_GET_CLIENTS
+            if (command.equals(SERVER_GET_CLIENTS)) {
 
-                    switch ( status ) {
+                switch ( status ) {
 
-                        case DATA_IS_READY:
-                            // Getting Record Data after Command GET_BY_DATE or GET_ALL
-                            ArrayList<String> array_level_json = new Gson().fromJson(message, ArrayList.class);
-                            for (String item : array_level_json) {
-                                ClientData cd = getFromJsonToClientData(item); // get original (LATIN) Record Data
-                                if (!(null == cd)) {
-                                    client_data_array.add(cd);
-                                }
+                    case DATA_IS_READY:
+                        // Getting Record Data after Command GET_BY_DATE or GET_ALL
+                        ArrayList<String> array_level_json = new Gson().fromJson(message, ArrayList.class);
+                        for (String item : array_level_json) {
+                            ClientData cd = getFromJsonToClientData(item); // get original (LATIN) Record Data
+                            if (!(null == cd)) {
+                                client_data_array.add(cd);
                             }
-                            break;
+                        }
+                        break;
 
-                        // Config answer was got from the server
-                        case SERVER_ANSWER_CONFIG_CHANGED:
-                        case DATA_IS_NOT_READY:
-                        default:
-                            status = message;
-                            break;
-                    }
-
-                    dataParameters.setClientDataArray(client_data_array);
-                    view_listener.OnFinishedRefreshViewStatus(CLIENT_BASE_LOADED);
-                    view_listener.onFinishedGetServerClientData();
-
-                }  else {// Getting Record Data after Command GET_BY_DATE or GET_ALL
-
-                    switch ( status ) {
-
-                        case DATA_IS_READY:
-
-                            final Calendar cal_zero = Calendar.getInstance();
-                            cal_zero.add( Calendar.DAY_OF_YEAR, -1);
-                            Date date_yesterday = cal_zero.getTime();
-                            Date date_last_record = new Date();
-                            Date date_past_first_record = new Date();
-                            Date date_actual_first_record = new Date();
-
-                            String str_last_rec = "";
-                            String str_past_first_rec = "";
-                            String str_actual_first_rec = "";
-                            int old_recs = 0;
-
-                            ArrayList<String> array_level_json = new Gson().fromJson(message, ArrayList.class);
-
-                            for (String item : array_level_json) {
-                                RecordData rd = getFromJsonToRecordData(item); // get original (LATIN) Record Data
-
-                                if (!(null == rd)) {
-                                    rec_data_array.add(rd);
-
-                                    Date current_record = convertStringtoTimeStamp ( rd.getDate(), rd.getTime());
-                                    // define the latest record
-                                    if (current_record.after(date_last_record)) {
-                                        date_last_record = current_record;
-                                        str_last_rec = rd.getDate();
-                                    }
-                                    // define the first actual record
-                                    if (current_record.before(date_actual_first_record) || current_record.after(date_yesterday) ) {
-                                        date_actual_first_record = current_record;
-                                        str_actual_first_rec = rd.getDate();
-                                    }
-                                    // define the earliest record
-                                    if (current_record.before(date_past_first_record)) {
-                                        date_past_first_record = current_record;
-                                        str_past_first_rec = rd.getDate();
-                                    }
-                                    // define the nummber of past and actual records
-                                    if (current_record.before(date_yesterday)) {
-                                        old_recs++;
-                                    }
-                                }
-                            }
-
-                            int len = rec_data_array.size();
-                            if (len > 0) {
-                                status = status + "Всего " + old_recs + " прошлых (c " + str_past_first_rec + " по настоящее) и " +
-                                        (len - old_recs) + " актуальных записей (с " + str_actual_first_rec + " по " + str_last_rec + ")";
-                            }
-                            break;
-
-                        // Config answer was got from the server
-                        case SERVER_ANSWER_CONFIG_CHANGED:
-                            sendModelDataToServer( view_listener, SERVER_GET_CLIENTS, "", "");
-                            //view_listener.OnFinishedRefreshViewStatus( message );
-                            return;
-                        case DATA_IS_NOT_READY:
-                        default:
-                            status = message;
-                            break;
-                    }
-
-                    dataParameters.setRecordDataArray(rec_data_array);
-                    view_listener.onFinishedGetServerRecordsData();
-                    view_listener.OnFinishedRefreshViewStatus( status );
+                    // Config answer was got from the server
+                    case SERVER_ANSWER_CONFIG_CHANGED:
+                    case DATA_IS_NOT_READY:
+                    default:
+                        //status = message;
+                        break;
                 }
 
+                dataParameters.setClientDataArray(client_data_array);
+                view_listener.OnFinishedRefreshViewStatus(CLIENT_BASE_LOADED);
+                view_listener.onFinishedGetServerClientData();
+
+            }  else {// Getting Record Data after Command GET_BY_DATE or GET_ALL
+
+                switch ( status ) {
+
+                    case DATA_IS_READY:
+
+                        final Calendar cal_zero = Calendar.getInstance();
+                        cal_zero.add( Calendar.DAY_OF_YEAR, -1);
+                        Date date_yesterday = cal_zero.getTime();
+                        Date date_last_record = new Date();
+                        Date date_past_first_record = new Date();
+                        Date date_actual_first_record = new Date();
+
+                        String str_last_rec = "";
+                        String str_past_first_rec = "";
+                        String str_actual_first_rec = "";
+                        int old_recs = 0;
+
+                        ArrayList<String> array_level_json = new Gson().fromJson(message, ArrayList.class);
+
+                        for (String item : array_level_json) {
+                            RecordData rd = getFromJsonToRecordData(item); // get original (LATIN) Record Data
+
+                            if (!(null == rd)) {
+                                try {
+                                    int client_id = rd.getId();
+                                    if (client_id > NOT_IN_CLIENT_BASE) {
+                                        rd.setName(dataParameters.getClientDataArray().get(client_id).getName());
+                                        rd.setPhone(dataParameters.getClientDataArray().get(client_id).getPhone());
+                                    }
+                                } catch (Exception e) {
+                                    view_listener.OnFinishedRefreshViewStatus("Client base is empty");
+                                }
+
+                                rec_data_array.add(rd);
+
+                                Date current_record = convertStringtoTimeStamp ( rd.getDate(), rd.getTime());
+                                // define the latest record
+                                if (current_record.after(date_last_record)) {
+                                    date_last_record = current_record;
+                                    str_last_rec = rd.getDate();
+                                }
+                                // define the first actual record
+                                if (current_record.before(date_actual_first_record) || current_record.after(date_yesterday) ) {
+                                    date_actual_first_record = current_record;
+                                    str_actual_first_rec = rd.getDate();
+                                }
+                                // define the earliest record
+                                if (current_record.before(date_past_first_record)) {
+                                    date_past_first_record = current_record;
+                                    str_past_first_rec = rd.getDate();
+                                }
+                                // define the nummber of past and actual records
+                                if (current_record.before(date_yesterday)) {
+                                    old_recs++;
+                                }
+                            }
+                        }
+
+                        int len = rec_data_array.size();
+                        if (len > 0) {
+                            status = status + "Всего " + old_recs + " прошлых (c " + str_past_first_rec + " по настоящее) и " +
+                                    (len - old_recs) + " актуальных записей (с " + str_actual_first_rec + " по " + str_last_rec + ")";
+                        }
+                        break;
+
+                    // Config answer was got from the server
+                    case SERVER_ANSWER_CONFIG_CHANGED:
+                        sendModelDataToServer( view_listener, SERVER_GET_CLIENTS, "", "");
+                        return;
+                    case DATA_IS_NOT_READY:
+                    default:
+                        status = message;
+                        break;
+                }
+
+                dataParameters.setRecordDataArray(rec_data_array);
+                view_listener.onFinishedGetServerRecordsData();
+                view_listener.OnFinishedRefreshViewStatus( status );
             }
         }, 0);
     }
@@ -302,7 +309,6 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
                                  || (current1.before(calend_start) && calend_start.before(current2))) {
                              //check if Start Time is equal to rda item time to set the time to busy
                              if (current1.equals(calend_start)) {
-
                                  data.set(d_ind, getMainSreenDataFromRecordData(mainScreenData, rda.get(i)));
 
                              } else {
@@ -323,7 +329,7 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
 
     private MainScreenData getMainSreenDataFromRecordData ( MainScreenData mainScreenData, RecordData rd) {
 
-        mainScreenData.setJob(rd.getJob());
+        //mainScreenData.setJob(rd.getJob());
         mainScreenData.setName(rd.getName());
         mainScreenData.setIndex(rd.getIndex());
 
@@ -338,7 +344,9 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
 
         } else {
 
-            if ( null == rd.getId() || rd.getId().equals("") ) {
+            mainScreenData.setJob(job_array[Integer.parseInt(rd.getJob())]);
+            if ( !rd.getIndexBit(rd.getBitsIndex(), BIT_QUESTION) ) {
+
                 if (color_text_dark) {
                     mainScreenData.setColor(context.getResources().getColor(COLOR_HAIRCUT_RECORD_DARK));
                 } else {

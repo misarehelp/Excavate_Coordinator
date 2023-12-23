@@ -3,22 +3,14 @@ package ru.volganap.nikolay.haircut_schedule;
 import android.content.Context;
 import android.os.Bundle;
 import androidx.fragment.app.Fragment;
-
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.TextView;
-
-import java.text.SimpleDateFormat;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 
 public class CalendarFragment extends Fragment implements Contract.MainActivityToCalendarFragment {
@@ -37,8 +29,6 @@ public class CalendarFragment extends Fragment implements Contract.MainActivityT
     private Contract.CalendarFragmentToMainActivity callbackToActivity;
     private HashMap<String, Integer> cal_hashmap;
 
-    private Context context;
-
     public CalendarFragment() {
         month = calendar.get(Calendar.MONTH);
         year = calendar.get(Calendar.YEAR);
@@ -47,12 +37,12 @@ public class CalendarFragment extends Fragment implements Contract.MainActivityT
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        this.context = context;
+
         try {
             callbackToActivity = (Contract.CalendarFragmentToMainActivity) context;
 
         } catch (ClassCastException e) {
-            throw new ClassCastException(context.toString() + " must implement Contract.CalendarFragmentToMainActivity");
+            throw new ClassCastException(context + " must implement Contract.CalendarFragmentToMainActivity");
         }
     }
 
@@ -120,10 +110,9 @@ public class CalendarFragment extends Fragment implements Contract.MainActivityT
     }
 
     @Override
-    public void setCalendarHashMap (HashMap<String, Integer> cal_hashmap, Calendar calendar_backup) {
+    public void setCalendarHashMap ( HashMap<String, Integer> cal_hashmap ) {
 
         this.cal_hashmap = cal_hashmap;
-        calendar.setTime(calendar_backup.getTime());
 
         int day_backup = calendar.get(Calendar.DAY_OF_MONTH);
         calendar.set(Calendar.DAY_OF_MONTH, 1);

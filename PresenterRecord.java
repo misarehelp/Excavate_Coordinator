@@ -36,18 +36,9 @@ class PresenterRecord implements Contract.PresenterRecord, Constants, Enums, Con
    }
 
    @Override
-   public void onButtonSave( RecordData rec_data ) {
-      modelRecord.addRecordData( this, rec_data);
-   }
-
-   @Override
-   public void onButtonDeleteRecord() {
-      modelRecord.deleteRecordData( this);
-   }
-
-   @Override
-   public void onButtonChangeRecord(RecordData  rec_data) {
-      modelRecord.changeRecordData( this, rec_data);
+   public void onButtonChangeRecord(RecordData  rec_data, String code) {
+      recordView.setRecordButtonsVisibility(SERVER_WAIT_FOR_ANSWER);
+      modelRecord.changeRecordData( this, rec_data, code);
    }
 
    @Override
@@ -88,6 +79,9 @@ class PresenterRecord implements Contract.PresenterRecord, Constants, Enums, Con
    public void onShowToast( String state ) {
       if (recordView != null) {
          recordView.showToast( state );
+         if (!state.equals(DATA_WAS_SAVED)) {
+            recordView.setRecordButtonsVisibility(state_code);
+         }
       }
    }
 

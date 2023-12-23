@@ -5,7 +5,6 @@ import android.content.Context;
 import android.graphics.Color;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -125,48 +124,46 @@ public class MainRecycleAdapter  extends RecyclerView.Adapter<MainRecycleAdapter
          weight_name = name_params.weight;
          weight_ll_image = ll_img_params.weight;
 
-         view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-               position = getAdapterPosition();
+         view.setOnClickListener(v -> {
+            position = getAdapterPosition();
 
-               String s_index = data.get(position).getIndex();
-               String time = data.get(position).getTime();
-               String type = data.get(position).getType();
+            String s_index = data.get(position).getIndex();
+            String time = data.get(position).getTime();
+            String type = data.get(position).getType();
+            //String type = data.get(position).getJob();
 
-               try {
+            try {
 
-                  if (Integer.parseInt(s_index) < 0 ) {
-                     //Creating the instance of PopupMenu for New Haircut record or Note record
-                     PopupMenu popup = new PopupMenu(context, parent);
-                     //Inflating the Popup using xml file
-                     popup.getMenuInflater().inflate(R.menu.main_list_menu, popup.getMenu());
-                     //registering popup with OnMenuItemClickListener
-                     popup.setOnMenuItemClickListener(item -> {
-                        switch (item.getItemId()) {
-                           case R.id.menu_add_rec:
-                              clickListener.onItemClick(INDEX_FREE_RECORD, time, type);
-                              break;
+               if (Integer.parseInt(s_index) < 0 ) {
+                  //Creating the instance of PopupMenu for New Haircut record or Note record
+                  PopupMenu popup = new PopupMenu(context, parent);
+                  //Inflating the Popup using xml file
+                  popup.getMenuInflater().inflate(R.menu.main_list_menu, popup.getMenu());
+                  //registering popup with OnMenuItemClickListener
+                  popup.setOnMenuItemClickListener(item -> {
+                     switch (item.getItemId()) {
+                        case R.id.menu_add_rec:
+                           clickListener.onItemClick(INDEX_FREE_RECORD, time, type);
+                           break;
 
-                           case R.id.menu_add_note:
-                              clickListener.onItemClick(INDEX_NOTE, time, INDEX_NOTE);
-                              break;
-                           default:
-                              break;
-                        }
+                        case R.id.menu_add_note:
+                           clickListener.onItemClick(INDEX_NOTE, time, INDEX_NOTE);
+                           break;
+                        default:
+                           break;
+                     }
 
-                        return true;
-                     });
+                     return true;
+                  });
 
-                     popup.show(); //showing popup menu
+                  popup.show(); //showing popup menu
 
-                  } else {
-                     clickListener.onItemClick(s_index, time, type);
-                  }
-
-               } catch (NullPointerException npe) {
-                  Log.d(LOG_TAG, "Exception: " + npe );
+               } else {
+                  clickListener.onItemClick(s_index, time, type);
                }
+
+            } catch (NullPointerException npe) {
+               Log.d(LOG_TAG, "Exception: " + npe );
             }
          });
       }

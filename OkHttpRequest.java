@@ -49,8 +49,8 @@ public class OkHttpRequest implements Constants, Enums {
                 } else if (res.contains(URL_WAS_NOT_FOUND)){
                     message = URL_WAS_NOT_FOUND;
 
-                } else if ( command.equals(SERVER_GET_NEXT_ID) ) {
-                    status = SERVER_GET_NEXT_ID;
+                } else if ( command.equals(SERVER_GET_CLIENT_ID) ) {
+                    status = SERVER_GET_CLIENT_ID;
 
                 } else if (res.contains(SERVER_ANSWER_CONFIG_CHANGED)) {
                     status = SERVER_ANSWER_CONFIG_CHANGED;

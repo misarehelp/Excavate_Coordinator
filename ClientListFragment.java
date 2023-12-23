@@ -45,7 +45,7 @@ public class ClientListFragment extends Fragment implements Constants, Enums, Co
             callbackToActivity = (Contract.ClientFragmentToRecordActivity) context;
 
         } catch (ClassCastException e) {
-            throw new ClassCastException(context.toString() + " must implement Contract.RecordFragmentToRecordActivity");
+            throw new ClassCastException(context + " must implement Contract.RecordFragmentToRecordActivity");
         }
     }
 
@@ -103,14 +103,10 @@ public class ClientListFragment extends Fragment implements Constants, Enums, Co
         });
 
         // add a client number from a phone book
-        bt_add_client.setOnClickListener(v -> {
-            fillInClientFields ("", "", "");
-        });
+        bt_add_client.setOnClickListener(v -> fillInClientFields ("", "", ""));
 
         // save a client
-        bt_save.setOnClickListener(v -> {
-            checkCorrectInput();
-        });
+        bt_save.setOnClickListener(v -> checkCorrectInput());
     }
 
     private void fillInClientFields (String name, String phone, String comment) {
@@ -135,8 +131,8 @@ public class ClientListFragment extends Fragment implements Constants, Enums, Co
     }
 
     @Override
-    public void onGetClientDataToFragment(String name, String phone) {
-        fillInClientFields (name, phone, "");
+    public void onGetClientDataToFragment(ClientData value) {
+        fillInClientFields (value.getName(), value.getPhone(), "");
     }
 
     @Override
@@ -211,11 +207,11 @@ public class ClientListFragment extends Fragment implements Constants, Enums, Co
                 break;
 
             case GET_CLIENT_DATA_FROM_BASE:
-                callbackToActivity.onGetClientDataToActivity( clientData.getName(), clientData.getPhone(), false);
+                callbackToActivity.onGetClientDataToActivity( clientData, false);
                 break;
 
             case SHOW_CLIENT_JOB:
-                callbackToActivity.onGetClientDataToActivity( clientData.getName(), clientData.getPhone(), true);
+                callbackToActivity.onGetClientDataToActivity( clientData, true);
                 presenterListClient.onItemShowClientJob( clientData.getPhone() );
                 break;
             default:
