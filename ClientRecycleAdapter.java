@@ -2,7 +2,6 @@ package ru.volganap.nikolay.haircut_schedule;
 
 import android.content.Context;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -81,7 +80,6 @@ class ClientRecycleAdapter extends RecyclerView.Adapter<ClientRecycleAdapter.Vie
             ClientData clientData = data.get(position);
          //Creating the instance of PopupMenu for New Haircut record or Note record
             PopupMenu popup = new PopupMenu(context, parent);
-            //Inflating the Popup using xml file
             popup.getMenuInflater().inflate(R.menu.client_list_menu, popup.getMenu());
 
             //registering popup with OnMenuItemClickListener
@@ -92,17 +90,14 @@ class ClientRecycleAdapter extends RecyclerView.Adapter<ClientRecycleAdapter.Vie
                      break;
 
                   case R.id.menu_change_client:
-                     //clickListener.onItemClick( position, SERVER_CHANGE_CLIENT, clientData );
                      clickListener.onItemClick( position, SERVER_CHANGE_CLIENT, clientData );
                      break;
 
                   case R.id.menu_delete_client:
-                     //clickListener.onItemClick( position, SERVER_DELETE_CLIENT, clientData );
                      clickListener.onItemClick( position, SERVER_DELETE_CLIENT, clientData );
                      break;
 
                   case R.id.menu_show_client_job:
-                     //clickListener.onItemClick( position, SERVER_DELETE_CLIENT, clientData );
                      clickListener.onItemClick( position, SHOW_CLIENT_JOB, clientData );
                      break;
                   default:

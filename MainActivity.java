@@ -1,9 +1,6 @@
 package ru.volganap.nikolay.haircut_schedule;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
-import android.app.DatePickerDialog;
-import android.app.FragmentManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,42 +8,27 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.viewpager2.widget.ViewPager2;
 
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.DatePicker;
-import android.widget.GridView;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
-import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
-import com.google.gson.Gson;
 
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.TimeZone;
 
 public class MainActivity extends AppCompatActivity implements Constants, Enums, Contract.ViewMain, Contract.ActivityReciever, Contract.CalendarFragmentToMainActivity,
         Contract.Recycle.MainInterface {
@@ -68,21 +50,17 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     Contract.PresenterMain presenterMain;
     private ArrayList<String> d_interval;
 
-    //private int current_page = 0;
     private int theme_type;
     private int page = 0;
-
     private RecordVisibility recordVisibility;
     // for Calendar
     private HashMap<String, Integer> cal_hashmap;
     private Fragment calendarFragment = new CalendarFragment();
-
     private Contract.MainActivityToCalendarFragment callbackToCalendarFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         // Init Settings Preferences
         initSharedPreferences();
 
@@ -94,7 +72,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         StrictMode.setVmPolicy(builder.build()); */
         // Init Main activity layout
         initMainViewLayout();
-
         // instantiating object of Presenter Interface
         presenterMain = new PresenterMain(this, this, theme_type, getDaysBefore());
 
@@ -109,7 +86,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
                     .commit();
 
         } catch (ClassCastException e) {
-            throw new ClassCastException(this.toString()
+            throw new ClassCastException(this
                     + " must implement Contract.RecordActivity.ToRecordFragment");
         }
     }
@@ -252,7 +229,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         MainPagerAdapter fragmentStateAdapter = new MainPagerAdapter(this );
 
         for (int i = 0; i < d_interval.size(); i++) {
-            fragmentStateAdapter.addFragment(new MainFragment(new_data.get(i), d_interval.get(i), theme_type));
+            fragmentStateAdapter.addFragment(new MainFragment(new_data.get(i), theme_type));
         }
 
         vpPager.setAdapter(fragmentStateAdapter);
@@ -354,7 +331,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         }
 
         presenterMain.onChangeRecordClick(tv_date.getText().toString(), time, index, type, theme_type, command);
-        //clearCalendarFragment();
     }
 
     private void buttonsSetOnClickListener() {
@@ -398,7 +374,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     public void onDateSet( Calendar calendar, int dayOfWeek, String date_str) {
 
         page = dayOfWeek;
-
         if (null != d_interval && d_interval.contains(date_str)) {
             TabLayout.Tab tab = tabLayout.getTabAt(page);
             tab.select();
@@ -425,7 +400,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
 
             case R.id.set_item:
                 runPrefActivity(false);
-                //startActivity(new Intent(this, PrefActivity.class));
                 break;
 
             case R.id.serv_config_item:

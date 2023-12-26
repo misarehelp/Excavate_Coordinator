@@ -98,7 +98,7 @@ public class CalendarAdapter extends BaseAdapter {
       if (month == 4 || month == 6 || month == 9 || month == 11) daysInMonth = 30;
          else if (month == 2) daysInMonth = (year % 4 == 0) ? 29 : 28;
                   else daysInMonth = 31;
-//        Log.d("FIRSTDAY","days "+daysInMonth);
+
       return daysInMonth;
    }
 

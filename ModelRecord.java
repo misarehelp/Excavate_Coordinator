@@ -223,7 +223,6 @@ class ModelRecord implements Contract.ModelRecord, Constants {
       /* int date = managedCursor.getColumnIndex(CallLog.Calls.DATE);
       int duration = managedCursor.getColumnIndex(CallLog.Calls.DURATION);
       StringBuffer sb = new StringBuffer(); */
-
       managedCursor.moveToNext();
       String phone_number = managedCursor.getString(number);
       String callType = managedCursor.getString(type);
@@ -231,12 +230,10 @@ class ModelRecord implements Contract.ModelRecord, Constants {
       String callDayTime = new Date(Long.valueOf(callDate)).toString();
       int callDuration = managedCursor.getInt(duration); */
       managedCursor.close();
-
       /*int dircode = Integer.parseInt(callType);
       if (dircode == CallLog.Calls.INCOMING_TYPE) {
          //Incoming calls
       } */
-
       listener.onFinishedGetLastCall( phone_number );
    }
 }

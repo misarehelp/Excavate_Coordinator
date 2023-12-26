@@ -82,6 +82,5 @@ interface Constants {
     String PREF_ACTIVITY = "pref_activity";
     String RECORDS_MAX_NUMBER = "records_max_number";
     String DAYS_BEFORE_NOW = "days_before_now";
-    //String URL_ADDR = "https://volganap.ru/hair_cut/index_hc.php";
-    String URL_ADDR = "https://volganap.ru/hair_cut/index_hc2.php";
+    String URL_ADDR = "https://volganap.ru/hair_cut/index_hc.php";
 }

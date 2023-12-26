@@ -22,10 +22,6 @@ public class RecordData {
    private String price;
    @SerializedName("c")
    private String comment;
-   //@SerializedName("pw")
-   //private String pic_wish;
-   //@SerializedName("r")
-   //private String remind;
    @SerializedName("b")
    private byte bits_index;
 
@@ -64,13 +60,6 @@ public class RecordData {
       return comment;
    }
 
-   /*String  getPicWish() {
-      return pic_wish;
-   }
-   String getRemind() {
-      return remind;
-   } */
-
    //setters
    void setIndex (String index) {
       this.index = index;
@@ -93,7 +82,4 @@ public class RecordData {
       int mask = 1 << pos; // equivalent of 2 to the nth power
       return (b_id & mask) != 0;
    }
-
-   /* void setPicWish( String pic_wish) {this.pic_wish = pic_wish;}
-   void setRemind( String remind) {this.remind = remind;} */
 }

@@ -47,9 +47,7 @@ public class HistoryRecycleAdapter extends RecyclerView.Adapter<HistoryRecycleAd
             holder.tv_job.setText(job_array[Integer.parseInt(recordData.getJob())]);
             holder.tv_job_price.setText(recordData.getPrice());
             holder.tv_client_comment.setText(recordData.getComment());
-            //String has_photo = (recordData.getPicWish().equals(TRUE_VALUE)) ? "да" : "нет";
             String has_photo = recordData.getIndexBit(recordData.getBitsIndex(), BIT_HAS_PIC) ? "да" : "нет";
-            //holder.tv_client_has_photo.setText(recordData.getPicWish());
             holder.tv_client_has_photo.setText(has_photo);
         }
     }
@@ -75,7 +73,6 @@ public class HistoryRecycleAdapter extends RecyclerView.Adapter<HistoryRecycleAd
                 int position = getAdapterPosition();
                 RecordData recordData = data.get(position);
                 if (recordData.getIndexBit(recordData.getBitsIndex(), BIT_HAS_PIC)) {
-                //if (recordData.getPicWish().equals(TRUE_VALUE)) {
                     String filename = recordData.getName() + "-" + recordData.getPhone() + "-" + recordData.getDate();
                     clickListener.onItemClick(filename);
                 }

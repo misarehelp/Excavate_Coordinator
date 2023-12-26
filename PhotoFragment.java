@@ -163,7 +163,6 @@ public class PhotoFragment extends Fragment implements Constants, Enums, Contrac
         int scaleWidth = metrics.widthPixels;
         Double aspect = Double.parseDouble(sharedPrefs.getString(ASPECT, "0.68"));
         int scaleHeight = (int) (metrics.heightPixels * aspect);
-        //Bitmap bitmapOutput = Bitmap.createScaledBitmap(bitmap, metrics.widthPixels, metrics.heightPixels, false);
         Bitmap bitmapOutput = Bitmap.createScaledBitmap( bitmap, scaleWidth, scaleHeight, false );
         img_client_photo.setImageBitmap(bitmapOutput);
     }

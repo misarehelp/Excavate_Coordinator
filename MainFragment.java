@@ -18,12 +18,10 @@ import java.util.ArrayList;
 public class MainFragment extends Fragment implements Constants {
     private Context context;
     private ArrayList<MainScreenData> data;
-    private String date;
     private int theme_type;
 
-    public MainFragment (ArrayList<MainScreenData> data, String date, int theme_type) {
+    public MainFragment (ArrayList<MainScreenData> data, int theme_type) {
         this.data = data;
-        this.date = date;
         this.theme_type = theme_type;
     }
     @Override

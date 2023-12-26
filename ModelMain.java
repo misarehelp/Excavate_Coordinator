@@ -147,7 +147,6 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
                     case SERVER_ANSWER_CONFIG_CHANGED:
                     case DATA_IS_NOT_READY:
                     default:
-                        //status = message;
                         break;
                 }
 
@@ -329,11 +328,11 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
 
     private MainScreenData getMainSreenDataFromRecordData ( MainScreenData mainScreenData, RecordData rd) {
 
-        //mainScreenData.setJob(rd.getJob());
         mainScreenData.setName(rd.getName());
         mainScreenData.setIndex(rd.getIndex());
 
         if (rd.getJob().equals(INDEX_NOTE)) {
+            mainScreenData.setJob(rd.getJob());
             mainScreenData.setType(INDEX_NOTE);
             if (color_text_dark) {
                 mainScreenData.setColor(context.getResources().getColor(COLOR_NOTE_RECORD_DARK));

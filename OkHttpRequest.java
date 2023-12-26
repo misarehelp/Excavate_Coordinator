@@ -40,7 +40,7 @@ public class OkHttpRequest implements Constants, Enums {
                 String res = response.body().string();
                 String message = res;
 
-                if (res.startsWith("[\"{") || res.startsWith("{") ) {
+                if (res.startsWith("[\"{") || res.startsWith("[{") ) {
                     status = DATA_IS_READY;
 
                 } else if ( res.equals(DATA_WAS_SAVED )) {

@@ -10,7 +10,6 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
     private Contract.ModelMain modelMain;
     private Context context;
     private DataParameters dataParameters;
-
     private Calendar calendar_backup = Calendar.getInstance();
     private int dayOfWeek_backup = 0;
 

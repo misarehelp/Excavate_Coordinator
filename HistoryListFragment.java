@@ -59,7 +59,6 @@ public class HistoryListFragment extends Fragment implements Constants, Enums, C
       bt_back = view.findViewById(R.id.bt_back);
       tv_client_name = view.findViewById(R.id.tv_client_name);
       tv_client_phone = view.findViewById(R.id.tv_client_phone);
-      // go back
       bt_back.setOnClickListener(v -> callbackToRecordFragment.backToRecordFragment(RECORD_HOST));
 
       recyclerView = view.findViewById(R.id.rv_history);

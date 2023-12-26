@@ -3,9 +3,7 @@ package ru.volganap.nikolay.haircut_schedule;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
-
 import com.google.gson.Gson;
-
 import java.util.ArrayList;
 
 class ModelClientList implements Contract.ModelClientList, Constants {
@@ -34,15 +32,6 @@ class ModelClientList implements Contract.ModelClientList, Constants {
    public void addClient ( int id) {
       //
       code = SERVER_ADD_CLIENT;
-      /* int id;
-      if (null == dataParameters.getClientDataArray()) {
-         id = 0;
-      } else {
-         int cl_base_size = dataParameters.getClientDataArray().size();
-         id = dataParameters.getClientDataArray().get(cl_base_size-1).getId() + 1;
-      } */
-
-      //clientData.setId(Integer.toString(id));
       clientData.setId(id);
       sendClientDataToServer( code, "", getFromClientDataToJson( clientData ));
    }
@@ -104,7 +93,6 @@ class ModelClientList implements Contract.ModelClientList, Constants {
                   int pos = dataParameters.getClientPosition();
                   client_data_array.set( pos, clientData );
                   break;
-               //Config Data has got or confirmation of saving Depline Data to Server
                default:
                   break;
             }

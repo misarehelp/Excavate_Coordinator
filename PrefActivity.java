@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.*;
 import android.os.Bundle;
-import android.widget.Toast;
 
 public class PrefActivity extends PreferenceActivity implements Constants {
     private static final int DEFAULT_ROTATE_POSITION = 0;
@@ -29,7 +28,6 @@ public class PrefActivity extends PreferenceActivity implements Constants {
         getFragmentManager()
                 .beginTransaction()
                 .replace(android.R.id.content, prefFragment)
-                //.replace(android.R.id.content, new PrefFragment())
                 .commit();
         sharedPrefs = getSharedPreferences(PREF_ACTIVITY, Context.MODE_PRIVATE);
     }
@@ -137,7 +135,6 @@ public class PrefActivity extends PreferenceActivity implements Constants {
         super.onDestroy();;
     }
 }
-
 
 //private static final String DEFINED_ADMIN_PASS = "5987";
 //private static final String WRONG_PASS = "Для переключения в режим диспетчера/администратора необходимо ввести корректный пароль";

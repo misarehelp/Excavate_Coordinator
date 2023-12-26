@@ -217,7 +217,6 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
     public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
         switch (parent.getId()) {
             case R.id.job_spinner:
-                //job_type = (String) parent.getItemAtPosition(position);
                 job_type = Integer.toString(position);
                 break;
             case R.id.duration_spinner:
@@ -231,7 +230,7 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
-        //job_type = (String) parent.getItemAtPosition(0);
+        //
     }
 
     // Fill In Records fields
@@ -252,7 +251,6 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
         } else {
 
             et_client_phone.setText( value.getPhone());
-            //job_spinner.setSelection(((ArrayAdapter<String>)job_spinner.getAdapter()).getPosition( value.getJob() ));
             job_spinner.setSelection(Integer.parseInt(value.getJob()));
             et_price.setText(value.getPrice());
             et_record_comment.setText(value.getComment());
@@ -348,13 +346,11 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
 
         // add photo from cam to storage
         bt_add_cam_photo.setOnClickListener(v -> {
-            // to take client picture from Camera
             checkCorrectNamePhoneInput(PhotoType.CAMERA);
         });
 
         // add photo from file to storage
         bt_add_file_photo.setOnClickListener(v -> {
-            // to add client picture from Galery
             checkCorrectNamePhoneInput(PhotoType.GALLERY);
         });
 
@@ -367,9 +363,8 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
             //
         });
 
-        // add photo from file to storage
+        // to exit from Record Activity
         bt_exit.setOnClickListener(v -> {
-            // to exit fro Record Activity
             presenterRecord.onButtonExit();
         });
 
@@ -394,7 +389,6 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
         });
 
         // add a client number from a phone book
-
         img_call_client.setOnClickListener(v -> {
             presenterRecord.onButtonMakeCall(et_client_phone.getText().toString());
         });
@@ -403,7 +397,6 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
         img_send_sms.setOnClickListener(v -> {
 
             if ( !index.equals(INDEX_FREE_RECORD) ) {
-
                 et_sms.setText(getResources().getString(R.string.default_sms) + " " + et_date.getText() + ", в " + et_time.getText());
                 int ll_sms_visible = ll_text_sms.getVisibility();
                 if ( ll_sms_visible == View.GONE ) ll_text_sms.setVisibility(View.VISIBLE);
@@ -411,7 +404,7 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
             }
         });
 
-        // add photo from file to storage
+        // send SMS to a client
         bt_sms.setOnClickListener(v -> {
             String number = et_client_phone.getText().toString();
             if ( number.trim().length() == 0 ) {
@@ -459,7 +452,6 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
     }
 
     private boolean isNamePhoneFull () {
-
         if ( et_client_phone.getText().toString().trim().length() == 0 || et_client_name.getText().toString().trim().length() == 0 ) {
             showToast(INPUT_CORRECT_NAME_NUMBER );
             return false;

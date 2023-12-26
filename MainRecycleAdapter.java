@@ -130,7 +130,6 @@ public class MainRecycleAdapter  extends RecyclerView.Adapter<MainRecycleAdapter
             String s_index = data.get(position).getIndex();
             String time = data.get(position).getTime();
             String type = data.get(position).getType();
-            //String type = data.get(position).getJob();
 
             try {
 
@@ -152,7 +151,6 @@ public class MainRecycleAdapter  extends RecyclerView.Adapter<MainRecycleAdapter
                         default:
                            break;
                      }
-
                      return true;
                   });
 
@@ -177,7 +175,6 @@ public class MainRecycleAdapter  extends RecyclerView.Adapter<MainRecycleAdapter
             clickListener.onItemClick(position, v);
          }
       }
-
 
       @Override
       public boolean onLongClick(View v) {

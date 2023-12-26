@@ -35,7 +35,6 @@ class PresenterClientList implements Contract.PresenterListClient, Constants, Co
    @Override
    public void onButtonAddNewClient(String name, String phone, String comment ) {
       ClientData clientData = getClientData (name, phone, comment);
-      //modelClientList.addClient( clientData );
       modelClientList.getClientID( clientData );
    }
 
