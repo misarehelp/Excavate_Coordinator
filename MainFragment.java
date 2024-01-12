@@ -19,10 +19,12 @@ public class MainFragment extends Fragment implements Constants {
     private Context context;
     private ArrayList<MainScreenData> data;
     private int theme_type;
+    private boolean holiday;
 
-    public MainFragment (ArrayList<MainScreenData> data, int theme_type) {
+    public MainFragment (ArrayList<MainScreenData> data, int theme_type, boolean holiday ) {
         this.data = data;
         this.theme_type = theme_type;
+        this.holiday = holiday;
     }
     @Override
     public void onAttach(Context context) {
@@ -46,7 +48,7 @@ public class MainFragment extends Fragment implements Constants {
     public void onViewCreated(View view, Bundle savedInstanceState) {
 
         RecyclerView recyclerView = view.findViewById(R.id.lv_records_list);
-        MainRecycleAdapter adapter = new MainRecycleAdapter(context, data, theme_type);
+        MainRecycleAdapter adapter = new MainRecycleAdapter(context, data, theme_type, holiday);
 
         DividerItemDecoration horizontalDecoration = new DividerItemDecoration(recyclerView.getContext(), DividerItemDecoration.VERTICAL);
         Drawable horizontalDivider = ContextCompat.getDrawable(context, R.drawable.layout_devider);

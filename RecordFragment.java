@@ -113,10 +113,10 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
 
         cb_photo = view.findViewById(R.id.cb_photo);
 
-        img_last_call = (ImageView) view.findViewById(R.id.img_last_call);
-        img_call_client = (ImageView) view.findViewById(R.id.img_call_client);
-        img_check_client = (ImageView) view.findViewById(R.id.img_check_client);
-        img_send_sms = (ImageView) view.findViewById(R.id.img_send_sms);
+        img_last_call = view.findViewById(R.id.img_last_call);
+        img_call_client = view.findViewById(R.id.img_call_client);
+        img_check_client = view.findViewById(R.id.img_check_client);
+        img_send_sms = view.findViewById(R.id.img_send_sms);
 
         ll_comment = view.findViewById(R.id.ll_comment);
         ll_client_phone = view.findViewById(R.id.ll_client_phone);
@@ -137,6 +137,30 @@ public class RecordFragment extends Fragment implements Constants, Enums, Adapte
         }
 
         presenterRecord = new PresenterRecord( context, this);
+
+        if (index.equals(INDEX_SET_ON_HOLIDAY)) {
+            RecordData rd = new RecordData();
+            byte_id = changeIndexBit(byte_id, BIT_HOLIDAY, true);
+            rd.setBitsIndex(byte_id);
+            rd.setDate(date);
+            rd.setTime(time);
+            rd.setId(NOT_IN_CLIENT_BASE);
+            rd.setName("");
+            rd.setPhone("");
+            rd.setDuration("30");
+            rd.setJob("");
+            rd.setPrice("");
+            rd.setComment("");
+            presenterRecord.onButtonChangeRecord( rd, SERVER_MARK_HOLIDAY );
+        }
+
+        if (index.equals(INDEX_SET_OFF_HOLIDAY)) {
+            RecordData rd = new RecordData();
+            rd.setDate(date);
+            rd.setTime(time);
+            //byte_id = changeIndexBit(byte_id, BIT_HOLIDAY, true);
+            presenterRecord.onButtonChangeRecord( rd, SERVER_UNMARK_HOLIDAY );
+        }
 
         buttonsSetOnClickListener();
     }

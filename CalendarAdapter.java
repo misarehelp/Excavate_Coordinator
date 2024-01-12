@@ -11,16 +11,20 @@ import android.widget.TextView;
 import java.util.Calendar;
 import java.util.HashMap;
 
-public class CalendarAdapter extends BaseAdapter {
+public class CalendarAdapter extends BaseAdapter implements Constants {
    Calendar c;
    int ct, day, year, month, current_day, current_year, current_month;
 
    private HashMap<String, Integer> cal_hashmap;
+   HashMap <String, Boolean> holiday_hashmap;
+   HashMap<String, Integer> calendar_colors;
 
-   public CalendarAdapter(Calendar c, int ct, HashMap<String, Integer> cal_hashmap ) {
+   public CalendarAdapter(Calendar c, int ct, HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap, HashMap<String, Integer> calendar_colors ) {
       this.c = c;
       this.ct = ct;
       this.cal_hashmap = cal_hashmap;
+      this.holiday_hashmap = holiday_hashmap;
+      this.calendar_colors = calendar_colors;
 
       Calendar current_cal = Calendar.getInstance();
 
@@ -60,24 +64,38 @@ public class CalendarAdapter extends BaseAdapter {
       TextView tv_event = v.findViewById(R.id.tv_event);
 
       int position = p + 1 - ct;
+      String date = getDateString(position);
+
       if (position > 0) {
          v.setTag(position);
          tv_day.setText("" + position);
 
+         if ( null != holiday_hashmap && holiday_hashmap.containsKey(date)) {
+            //tv_day.setBackgroundColor(Color.GREEN);
+            //tv_event.setBackgroundColor(Color.GREEN);
+            tv_day.setBackgroundColor(calendar_colors.get(CALENDAR_BACKGROUND_HOLIDAY));
+            tv_event.setBackgroundColor(calendar_colors.get(CALENDAR_BACKGROUND_HOLIDAY));
+         }
+
+         if ( null != cal_hashmap && cal_hashmap.containsKey(date) ) {
+            tv_event.setText("(" + cal_hashmap.get(date).toString() + ")");
+            //tv_event.setBackgroundColor(Color.LTGRAY);
+            tv_event.setBackgroundColor(calendar_colors.get(CALENDAR_BACKGROUND_WORKDAY));
+         }
+
          if (position == day) {
-            tv_day.setTextColor(Color.WHITE);
-            tv_day.setBackgroundColor(Color.BLUE);
+            //tv_day.setTextColor(Color.WHITE);
+            //tv_day.setBackgroundColor(Color.BLUE);
+            tv_day.setTextColor(calendar_colors.get(CALENDAR_TEXT_SELECT_DAY));
+            tv_day.setBackgroundColor(calendar_colors.get(CALENDAR_BACKGROUND_SELECT_DAY));
          }
 
          if (position == current_day && current_month == month && current_year == year ) {
-            tv_day.setTextColor(Color.MAGENTA);
-            tv_day.setBackgroundColor(Color.YELLOW);
-         }
+            //tv_day.setTextColor(Color.MAGENTA);
+            //tv_day.setBackgroundColor(Color.YELLOW);
+            tv_day.setTextColor(calendar_colors.get(CALENDAR_TEXT_TODAY));
+            tv_day.setBackgroundColor(calendar_colors.get(CALENDAR_BACKGROUND_TODAY));
 
-         String date = getDateString(position);
-         if (cal_hashmap.containsKey(date)) {
-            tv_event.setText("(" + cal_hashmap.get(date).toString() + ")");
-            tv_event.setBackgroundColor(Color.LTGRAY);
          }
       }
       return v;

@@ -28,6 +28,8 @@ public class CalendarFragment extends Fragment implements Contract.MainActivityT
 
     private Contract.CalendarFragmentToMainActivity callbackToActivity;
     private HashMap<String, Integer> cal_hashmap;
+    private HashMap <String, Boolean> holiday_hashmap;
+    HashMap<String, Integer> calendar_colors;
 
     public CalendarFragment() {
         month = calendar.get(Calendar.MONTH);
@@ -110,16 +112,18 @@ public class CalendarFragment extends Fragment implements Contract.MainActivityT
     }
 
     @Override
-    public void setCalendarHashMap ( HashMap<String, Integer> cal_hashmap ) {
+    public void setCalendarHashMap ( HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap, HashMap<String, Integer> calendar_colors ) {
 
         this.cal_hashmap = cal_hashmap;
+        this.holiday_hashmap = holiday_hashmap;
+        this.calendar_colors = calendar_colors;
 
         int day_backup = calendar.get(Calendar.DAY_OF_MONTH);
         calendar.set(Calendar.DAY_OF_MONTH, 1);
         int first_dayOfTheWeek = getOrdinalDayOfWeek(calendar.get(Calendar.DAY_OF_WEEK));
         calendar.set(Calendar.DAY_OF_MONTH, day_backup);
 
-        adapter2 = new CalendarAdapter(calendar, first_dayOfTheWeek, cal_hashmap);
+        adapter2 = new CalendarAdapter(calendar, first_dayOfTheWeek, cal_hashmap, holiday_hashmap, calendar_colors);
         grid.setAdapter(adapter2);
 
         int ordinal_dayOfTheWeek = getOrdinalDayOfWeek(calendar.get(Calendar.DAY_OF_WEEK));
@@ -135,7 +139,7 @@ public class CalendarFragment extends Fragment implements Contract.MainActivityT
         tv_year.setText("" + year);
         int ordinal_dayOfTheWeek = getOrdinalDayOfWeek(calendar.get(Calendar.DAY_OF_WEEK));
 
-        adapter2 = new CalendarAdapter(calendar, ordinal_dayOfTheWeek, cal_hashmap);
+        adapter2 = new CalendarAdapter(calendar, ordinal_dayOfTheWeek, cal_hashmap, holiday_hashmap, calendar_colors);
         grid.setAdapter(adapter2);
         setDayForAdapter(calendar.get(Calendar.DAY_OF_MONTH), ordinal_dayOfTheWeek);
     }

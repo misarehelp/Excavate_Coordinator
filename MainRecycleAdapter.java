@@ -23,11 +23,13 @@ public class MainRecycleAdapter  extends RecyclerView.Adapter<MainRecycleAdapter
    private final LayoutInflater inflater;
    private List<MainScreenData> data;
    private int theme_type;
+   private boolean holiday;
    private  float weight_job, weight_name, weight_ll_image;
 
-   MainRecycleAdapter(Context context, List<MainScreenData> data, int theme_type) {
+   MainRecycleAdapter(Context context, List<MainScreenData> data, int theme_type, boolean holiday ) {
       this.data = data;
       this.theme_type = theme_type;
+      this.holiday = holiday;
       this.inflater = LayoutInflater.from(context);
       this.context = context;
       this.clickListener = (Contract.Recycle.MainInterface) context;
@@ -44,54 +46,57 @@ public class MainRecycleAdapter  extends RecyclerView.Adapter<MainRecycleAdapter
    public void onBindViewHolder(MainRecycleAdapter.ViewHolder holder, int position) {
       MainScreenData mainScreenData = data.get(position);
 
-      LinearLayout.LayoutParams job_params = (LinearLayout.LayoutParams) holder.tv_rec_job.getLayoutParams();
-      LinearLayout.LayoutParams name_params = (LinearLayout.LayoutParams) holder.tv_rec_name.getLayoutParams();
-      LinearLayout.LayoutParams ll_img_params = (LinearLayout.LayoutParams) holder.ll_img_name.getLayoutParams();
+      if (!mainScreenData.getTime().equals(START_HOLIDAY_TIME)) {
 
-      if (mainScreenData.getJob().equals(INDEX_NOTE)) {
-         job_params.weight = 0;
-         name_params.weight = weight_job + weight_name;
-      } else {
-         job_params.weight = weight_job;
-         name_params.weight = weight_name;
-      }
+         LinearLayout.LayoutParams job_params = (LinearLayout.LayoutParams) holder.tv_rec_job.getLayoutParams();
+         LinearLayout.LayoutParams name_params = (LinearLayout.LayoutParams) holder.tv_rec_name.getLayoutParams();
+         LinearLayout.LayoutParams ll_img_params = (LinearLayout.LayoutParams) holder.ll_img_name.getLayoutParams();
 
-      if (mainScreenData.getIndex().equals(INDEX_FREE_RECORD)) {
-         ll_img_params.weight = 0;
-      } else {
-         ll_img_params.weight = weight_ll_image;
-      }
+         if (mainScreenData.getJob().equals(INDEX_NOTE)) {
+            job_params.weight = 0;
+            name_params.weight = weight_job + weight_name;
+         } else {
+            job_params.weight = weight_job;
+            name_params.weight = weight_name;
+         }
 
-      holder.tv_rec_job.setLayoutParams(job_params);
-      holder.tv_rec_name.setLayoutParams(name_params);
-      holder.ll_img_name.setLayoutParams(ll_img_params);
+         if (mainScreenData.getIndex().equals(INDEX_FREE_RECORD)) {
+            ll_img_params.weight = 0;
+         } else {
+            ll_img_params.weight = weight_ll_image;
+         }
 
-      holder.imageView.setImageResource(mainScreenData.getResource());
+         holder.tv_rec_job.setLayoutParams(job_params);
+         holder.tv_rec_name.setLayoutParams(name_params);
+         holder.ll_img_name.setLayoutParams(ll_img_params);
 
-      holder.tv_rec_time.setText(mainScreenData.getTime());
-      holder.tv_rec_job.setText(mainScreenData.getJob());
-      holder.tv_rec_name.setText(mainScreenData.getName());
+         holder.imageView.setImageResource(mainScreenData.getResource());
 
-      holder.tv_rec_time.setTextColor(mainScreenData.getColor());
-      holder.tv_rec_job.setTextColor(mainScreenData.getColor());
+         holder.tv_rec_time.setText(mainScreenData.getTime());
+         holder.tv_rec_job.setText(mainScreenData.getJob());
+         holder.tv_rec_name.setText(mainScreenData.getName());
 
-      if (mainScreenData.getIndex().equals(INDEX_FREE_RECORD)) {
-         holder.tv_rec_name.setTextColor(mainScreenData.getColor());
-      } else {
+         holder.tv_rec_time.setTextColor(mainScreenData.getColor());
+         holder.tv_rec_job.setTextColor(mainScreenData.getColor());
 
-         switch (theme_type) {
-            case THEME_DARK_SMALL:
-            case THEME_DARK_MEDIUM:
-            case THEME_DARK_BIG:
-               holder.tv_rec_name.setTextColor(Color.YELLOW);
-               break;
+         if (mainScreenData.getIndex().equals(INDEX_FREE_RECORD)) {
+            holder.tv_rec_name.setTextColor(mainScreenData.getColor());
+         } else {
 
-            case THEME_LIGHT_SMALL:
-            case THEME_LIGHT_MEDIUM:
-            case THEME_LIGHT_BIG:
-            default:
-               holder.tv_rec_name.setTextColor(Color.BLACK);
-               break;
+            switch (theme_type) {
+               case THEME_DARK_SMALL:
+               case THEME_DARK_MEDIUM:
+               case THEME_DARK_BIG:
+                  holder.tv_rec_name.setTextColor(Color.YELLOW);
+                  break;
+
+               case THEME_LIGHT_SMALL:
+               case THEME_LIGHT_MEDIUM:
+               case THEME_LIGHT_BIG:
+               default:
+                  holder.tv_rec_name.setTextColor(Color.BLACK);
+                  break;
+            }
          }
       }
    }
@@ -138,18 +143,29 @@ public class MainRecycleAdapter  extends RecyclerView.Adapter<MainRecycleAdapter
                   PopupMenu popup = new PopupMenu(context, parent);
                   //Inflating the Popup using xml file
                   popup.getMenuInflater().inflate(R.menu.main_list_menu, popup.getMenu());
+
+                  if (holiday) {
+                        popup.getMenu().findItem(R.id.menu_set_on_hol).setVisible(false);
+                        popup.getMenu().findItem(R.id.menu_set_off_hol).setVisible(true);
+
+                  }  else {
+                        popup.getMenu().findItem(R.id.menu_set_on_hol).setVisible(true);
+                        popup.getMenu().findItem(R.id.menu_set_off_hol).setVisible(false);
+                  }
+
                   //registering popup with OnMenuItemClickListener
                   popup.setOnMenuItemClickListener(item -> {
                      switch (item.getItemId()) {
-                        case R.id.menu_add_rec:
-                           clickListener.onItemClick(INDEX_FREE_RECORD, time, type);
-                           break;
-
-                        case R.id.menu_add_note:
-                           clickListener.onItemClick(INDEX_NOTE, time, INDEX_NOTE);
-                           break;
-                        default:
-                           break;
+                        case R.id.menu_add_rec ->
+                                clickListener.onItemClick(INDEX_FREE_RECORD, time, type);
+                        case R.id.menu_add_note ->
+                                clickListener.onItemClick(INDEX_NOTE, time, INDEX_NOTE);
+                        case R.id.menu_set_on_hol ->
+                                clickListener.onItemClick(INDEX_SET_ON_HOLIDAY, START_HOLIDAY_TIME, "");
+                        case R.id.menu_set_off_hol ->
+                                clickListener.onItemClick(INDEX_SET_OFF_HOLIDAY, START_HOLIDAY_TIME, "");
+                        default -> {
+                        }
                      }
                      return true;
                   });

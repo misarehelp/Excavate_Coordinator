@@ -46,6 +46,11 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
     }
 
     @Override
+    public void onDeleteArchiveRecords() {
+        modelMain.sendModelDataToServer( this, SERVER_DELETE_ARCHIVE, "", "");
+    }
+
+    @Override
     // operations to be performed - BroadcastReceiver trigger
     public void onBroadcastReceive(Intent intent) {
         modelMain.getFromModelBroadcastReceiver(this,  intent);
@@ -100,7 +105,7 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
     // Second pass - to define period (present or past)
     public void onFinishedGetServerRecordsData () {
         if (mainView != null) {
-            mainView.passDataToCalendar( dataParameters.getCalendarHashmap() );
+            mainView.passDataToCalendar( dataParameters.getCalendarHashmap(), dataParameters.getHolidayHashMap() );
         }
     }
 
@@ -124,11 +129,11 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
 
     @Override
     public void onMainActivityResume(){
-        String code = dataParameters.getStateCode();
 
+        String code = dataParameters.getStateCode();
         if (!code.equals(DATA_WAS_NOT_CHANGED)) {
             //there was made some chages in a record
-            mainView.passDataToCalendar( dataParameters.getCalendarHashmap() );
+            mainView.passDataToCalendar( dataParameters.getCalendarHashmap(), dataParameters.getHolidayHashMap()  );
             modelMain.getDateFromModelMain( this, calendar_backup, dayOfWeek_backup);
         }
 

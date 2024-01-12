@@ -27,22 +27,21 @@ class PresenterClientList implements Contract.PresenterListClient, Constants, Co
    }
 
    @Override
-   public void onItemChangeClientClick( int position, String name, String phone, String comment ) {
-      ClientData clientData = getClientData (name, phone, comment);
+   public void onItemChangeClientClick( int position, String name, String phone ) {
+      ClientData clientData = getClientData (name, phone);
       modelClientList.changeClient( position, clientData);
    }
 
    @Override
-   public void onButtonAddNewClient(String name, String phone, String comment ) {
-      ClientData clientData = getClientData (name, phone, comment);
+   public void onButtonAddNewClient(String name, String phone ) {
+      ClientData clientData = getClientData (name, phone);
       modelClientList.getClientID( clientData );
    }
 
-   private ClientData getClientData (String name, String phone, String comment) {
+   private ClientData getClientData (String name, String phone) {
       ClientData clientData = new ClientData();
       clientData.setName(name);
       clientData.setPhone(phone);
-      clientData.setComment(comment);
       return clientData;
    }
 
@@ -52,8 +51,8 @@ class PresenterClientList implements Contract.PresenterListClient, Constants, Co
    }
 
    @Override
-   public void onItemShowClientJob( String phone ) {
-      modelClientList.getArchiveClientByPhone( phone );
+   public void onItemShowClientJob( String id ) {
+      modelClientList.getArchiveClientById( id );
    }
 
    // ************* CallBack methods run from ModelRecord *******************

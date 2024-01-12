@@ -13,6 +13,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -25,6 +26,7 @@ import android.widget.Toast;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.jaredrummler.android.colorpicker.ColorPickerDialogListener;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -44,7 +46,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
 
     // Main activity layout
     private Button bt_restart, bt_show_hide_free_rs, bt_exit;
-    private TextView tv_date;
+    private TextView tv_date, tv_main_state;
     private TabLayout tabLayout;
     private BroadcastReceiver mainBroadcastReceiver;
     Contract.PresenterMain presenterMain;
@@ -55,23 +57,37 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     private RecordVisibility recordVisibility;
     // for Calendar
     private HashMap<String, Integer> cal_hashmap;
+    private HashMap <String, Boolean> holiday_hashmap;
+    private HashMap <String, Integer> calendar_colors;
     private Fragment calendarFragment = new CalendarFragment();
     private Contract.MainActivityToCalendarFragment callbackToCalendarFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Init Settings Preferences
-        initSharedPreferences();
 
         setContentView(R.layout.activity_main);
-        tv_date = findViewById(R.id.tv_date);
-        float new_size = (float) (tv_date.getTextSize() * 0.5);
-        tv_date.setTextSize(new_size);
+        initMainViewLayout();
+        // Init Settings Preferences
+        initSharedPreferences();
         /* StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build()); */
-        // Init Main activity layout
-        initMainViewLayout();
+    }
+
+    private void initMainViewLayout() {
+        // Main ViewLayout
+        tv_date = findViewById(R.id.tv_date);
+        tv_main_state = findViewById(R.id.tv_main_state);
+        float new_size = (float) (tv_date.getTextSize() * 0.5);
+        tv_date.setTextSize(new_size);
+        bt_restart = findViewById(R.id.bt_restart);
+        bt_show_hide_free_rs = findViewById(R.id.bt_show_hide_free_rs);
+        bt_exit = findViewById(R.id.bt_exit);
+        // Set visibility and onclick method of buttons
+        buttonsSetOnClickListener();
+    }
+
+    private void initPermissionsAndBR () {
         // instantiating object of Presenter Interface
         presenterMain = new PresenterMain(this, this, theme_type, getDaysBefore());
 
@@ -86,34 +102,65 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
                     .commit();
 
         } catch (ClassCastException e) {
-            throw new ClassCastException(this
-                    + " must implement Contract.RecordActivity.ToRecordFragment");
+            throw new ClassCastException(this + " must implement Contract.RecordActivity.ToRecordFragment");
         }
-    }
-
-    private void initMainViewLayout() {
-        // Main ViewLayout
-        bt_restart = findViewById(R.id.bt_restart);
-        bt_show_hide_free_rs = findViewById(R.id.bt_show_hide_free_rs);
-        bt_exit = findViewById(R.id.bt_exit);
     }
 
     private void initSharedPreferences() {
         sharedPrefs = getSharedPreferences(PREF_ACTIVITY, MODE_PRIVATE);
+        calendar_colors = new HashMap<>();
 
-        prefChangeListener = (sharedPreferences, key) -> {
-            if (key.equals(THEME)) {
-                onChangeThemeAppearance(true);
-            }
-            if (key.equals(DAYS_BEFORE_NOW)) {
-                presenterMain.onChangeDaysBefore(getDaysBefore());
-                //presenterMain.onChangeSharedPrefs(key);
-            }
-        };
-        sharedPrefs.registerOnSharedPreferenceChangeListener(prefChangeListener);
-        theme_type = onChangeThemeAppearance(false);
-        setTheme(theme_type);
-        //sharedPrefs.edit().clear().commit();
+        if (sharedPrefs.contains(CALENDAR_BACKGROUND_SELECT_DAY)) {
+            initCalendarColors(CALENDAR_BACKGROUND_HOLIDAY);
+            initCalendarColors(CALENDAR_TEXT_HOLIDAY);
+            initCalendarColors(CALENDAR_BACKGROUND_WORKDAY);
+            initCalendarColors(CALENDAR_TEXT_WORKDAY);
+            initCalendarColors(CALENDAR_BACKGROUND_TODAY);
+            initCalendarColors(CALENDAR_TEXT_TODAY);
+            initCalendarColors(CALENDAR_BACKGROUND_SELECT_DAY);
+            initCalendarColors(CALENDAR_TEXT_SELECT_DAY);
+
+            prefChangeListener = (sharedPreferences, key) -> {
+                switch (key) {
+                    case THEME:
+                        onChangeThemeAppearance(true);
+                        break;
+                    case DAYS_BEFORE_NOW:
+                        presenterMain.onChangeDaysBefore(getDaysBefore());
+                        //presenterMain.onChangeSharedPrefs(key);
+                        break;
+                    case CALENDAR_BACKGROUND_HOLIDAY:
+                    case CALENDAR_BACKGROUND_WORKDAY:
+                    case CALENDAR_BACKGROUND_TODAY:
+                    case CALENDAR_TEXT_HOLIDAY:
+                    case CALENDAR_TEXT_WORKDAY:
+                    case CALENDAR_TEXT_TODAY:
+                    case CALENDAR_TEXT_SELECT_DAY:
+                    case CALENDAR_BACKGROUND_SELECT_DAY:
+                        calendar_colors.put(key, sharedPrefs.getInt(key, 0));
+                        callbackToCalendarFragment.setCalendarHashMap(cal_hashmap, holiday_hashmap, calendar_colors);
+
+                        break;
+                    default:
+                }
+            };
+
+            sharedPrefs.registerOnSharedPreferenceChangeListener(prefChangeListener);
+            theme_type = onChangeThemeAppearance(false);
+            setTheme(theme_type);
+            //sharedPrefs.edit().clear().commit();
+
+            initPermissionsAndBR();
+        } else {
+            runPreferenceActivity(CALENDAR_SETTINGS, true);
+            runPreferenceActivity(GENERAL_SETTINGS, true);
+        }
+    }
+
+    private void initCalendarColors (String key) {
+        if (sharedPrefs.contains(key)) {
+            calendar_colors.put(key, sharedPrefs.getInt(key, 0));
+        }
     }
 
     private int onChangeThemeAppearance( boolean recreate) {
@@ -175,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
 
             @Override
             protected void denied() {
-                runPrefActivity(true);
+                //runPreferenceActivity(GENERAL_SETTINGS, true);
                 Toast.makeText(getApplicationContext(), NEED_RESTART, Toast.LENGTH_LONG).show();
             }
         };
@@ -211,8 +258,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
             }
         };
         registerReceiver(mainBroadcastReceiver, filter);
-        // Set visibility and onclick method of buttons
-        buttonsSetOnClickListener();
     }
 
     private void showTvDate(String date) {
@@ -224,12 +269,14 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     public void fillInRecordsList(ArrayList<ArrayList<MainScreenData>> new_data, ArrayList<String> days_interval ) {
 
         d_interval = days_interval;
+        boolean holiday_value;
 
         ViewPager2 vpPager = findViewById(R.id.vpPager);
         MainPagerAdapter fragmentStateAdapter = new MainPagerAdapter(this );
 
         for (int i = 0; i < d_interval.size(); i++) {
-            fragmentStateAdapter.addFragment(new MainFragment(new_data.get(i), theme_type));
+            holiday_value = null != holiday_hashmap && holiday_hashmap.containsKey(d_interval.get(i));
+            fragmentStateAdapter.addFragment( new MainFragment(new_data.get(i), theme_type, holiday_value ));
         }
 
         vpPager.setAdapter(fragmentStateAdapter);
@@ -365,9 +412,10 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     }
 
     @Override
-    public void passDataToCalendar(HashMap<String, Integer> cal_hashmap) {
+    public void passDataToCalendar(HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap ) {
         this.cal_hashmap = cal_hashmap;
-        callbackToCalendarFragment.setCalendarHashMap(cal_hashmap);
+        this.holiday_hashmap = holiday_hashmap;
+        callbackToCalendarFragment.setCalendarHashMap(cal_hashmap, holiday_hashmap, calendar_colors);
     }
 
     @Override
@@ -382,7 +430,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         }
     }
 
-   @Override
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.mymenu, menu);
         return true;
@@ -399,11 +447,20 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         switch (item.getItemId()) {
 
             case R.id.set_item:
-                runPrefActivity(false);
+                runPreferenceActivity( GENERAL_SETTINGS, false);
+                break;
+
+            case R.id.calendar_item:
+                runPreferenceActivity( CALENDAR_SETTINGS, false);
                 break;
 
             case R.id.serv_config_item:
                 presenterMain.onChangeServerPreferences( getMaxRecordsNumber(), getDaysBefore() );
+                break;
+
+            case R.id.delete_archive_item:
+
+                presenterMain.onDeleteArchiveRecords();
                 break;
 
             case R.id.version:
@@ -413,8 +470,9 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         return super.onOptionsItemSelected(item);
     }
 
-    private void runPrefActivity (boolean first_start) {
-        Intent intent = new Intent(this, PrefActivity.class);
+    private void runPreferenceActivity (String sender, boolean first_start) {
+        Intent intent = new Intent(this, SettingsActivity.class);
+        intent.putExtra(SENDER, sender);
         intent.putExtra(COMMAND, first_start);
         startActivity(intent);
     }
@@ -422,7 +480,8 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     @Override
     public void refreshMainStatus(String status) {
         String state = (recordVisibility == RecordVisibility.ARCHIVE) ? ARCHIVE_DATA + status :  status;
-        ((TextView) findViewById(R.id.tv_main_state)).setText(state);
+        tv_main_state.setText(state);
+        //((TextView) findViewById(R.id.tv_main_state)).setText(state);
     }
 
     @Override
@@ -448,8 +507,17 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     @Override
     protected void onResume() {
         super.onResume();
-        presenterMain.onMainActivityResume();
-        Log.d(LOG_TAG, "MainActivity: onResume ");
+
+        if (sharedPrefs.contains(CHILD_ACTIVITY)) {
+            if (sharedPrefs.getString(CHILD_ACTIVITY, GENERAL_SETTINGS).equals(RECORD_ACTIVITY)) {
+                presenterMain.onMainActivityResume();
+                Log.d(LOG_TAG, "MainActivity: onResume ");
+            }
+
+            if (sharedPrefs.getString(CHILD_ACTIVITY, GENERAL_SETTINGS).equals(GENERAL_SETTINGS)) {
+                //initSharedPreferences();
+            }
+        }
     }
 
     @Override

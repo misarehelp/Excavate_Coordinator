@@ -19,7 +19,7 @@ class ClientRecycleAdapter extends RecyclerView.Adapter<ClientRecycleAdapter.Vie
    private Context context;
    private ViewGroup parent;
    private final LayoutInflater inflater;
-   private List<ClientData> data = new ArrayList<>();
+   private List<ClientData> data;
 
    ClientRecycleAdapter(Context context, Fragment fragment, ArrayList<ClientData> data) {
       this.data = data;
@@ -54,7 +54,6 @@ class ClientRecycleAdapter extends RecyclerView.Adapter<ClientRecycleAdapter.Vie
       holder.tv_id.setText(Integer.toString(position));
       holder.tv_name.setText(clientData.getName());
       holder.tv_phone.setText(clientData.getPhone());
-      holder.tv_comment.setText(clientData.getComment());
    }
 
    @Override
@@ -64,7 +63,7 @@ class ClientRecycleAdapter extends RecyclerView.Adapter<ClientRecycleAdapter.Vie
 
    public class ViewHolder extends RecyclerView.ViewHolder {
 
-      final TextView tv_id, tv_name, tv_phone, tv_comment;
+      final TextView tv_id, tv_name, tv_phone;
       int position;
 
       ViewHolder(View view){
@@ -73,7 +72,6 @@ class ClientRecycleAdapter extends RecyclerView.Adapter<ClientRecycleAdapter.Vie
          tv_id = view.findViewById(R.id.tv_id);
          tv_name = view.findViewById(R.id.et_name);
          tv_phone = view.findViewById(R.id.et_phone);
-         tv_comment = view.findViewById(R.id.et_comment);
 
          view.setOnClickListener(v -> {
             position = getAdapterPosition();
@@ -85,23 +83,16 @@ class ClientRecycleAdapter extends RecyclerView.Adapter<ClientRecycleAdapter.Vie
             //registering popup with OnMenuItemClickListener
             popup.setOnMenuItemClickListener(item -> {
                switch (item.getItemId()) {
-                  case R.id.menu_add_client_to_record:
-                     clickListener.onItemClick( position, GET_CLIENT_DATA_FROM_BASE, clientData );
-                     break;
-
-                  case R.id.menu_change_client:
-                     clickListener.onItemClick( position, SERVER_CHANGE_CLIENT, clientData );
-                     break;
-
-                  case R.id.menu_delete_client:
-                     clickListener.onItemClick( position, SERVER_DELETE_CLIENT, clientData );
-                     break;
-
-                  case R.id.menu_show_client_job:
-                     clickListener.onItemClick( position, SHOW_CLIENT_JOB, clientData );
-                     break;
-                  default:
-                     break;
+                  case R.id.menu_add_client_to_record ->
+                          clickListener.onItemClick(position, GET_CLIENT_DATA_FROM_BASE, clientData);
+                  case R.id.menu_change_client ->
+                          clickListener.onItemClick(position, SERVER_CHANGE_CLIENT, clientData);
+                  case R.id.menu_delete_client ->
+                          clickListener.onItemClick(position, SERVER_DELETE_CLIENT, clientData);
+                  case R.id.menu_show_client_job ->
+                          clickListener.onItemClick(position, SHOW_CLIENT_JOB, clientData);
+                  default -> {
+                  }
                }
 
                return true;

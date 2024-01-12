@@ -25,7 +25,7 @@ public interface Contract {
         // Show Toast for View
         void showToast (String value);
         // pass Data To Calendar
-        void passDataToCalendar (HashMap<String, Integer> cal_hashmap);
+        void passDataToCalendar ( HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap );
     }
 
     interface ViewMainLayout {
@@ -48,6 +48,9 @@ public interface Contract {
 
         //void on Change Server Preferences;
         void onChangeServerPreferences( String max_recs,  int days_before );
+
+        //void on Delete Archive Records;
+        void onDeleteArchiveRecords();
 
         // method to be called when Main Permissions are Granted
         void onPermissionsGranted ();
@@ -88,7 +91,7 @@ public interface Contract {
 
     // ***************************************************************************************************
     interface MainActivityToCalendarFragment {
-        void setCalendarHashMap (HashMap<String, Integer> cal_hashmap);
+        void setCalendarHashMap (HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap, HashMap<String, Integer> calendar_colors);
         void syncCalendarDayToPage (int day);
     }
 
@@ -192,20 +195,20 @@ public interface Contract {
 interface ViewClientList {
     // set View ClientList fields with values
     void showClients (ArrayList<ClientData> value);
-    void setRecordButtonsVisibility (String permit_code);
+    void setRecordButtonsVisibility (String code);
     // Show Toast for View
     void showToast (String value);
 }
 interface PresenterListClient {
     void onBroadcastReceive(Intent intent);
     // method to be called when the Button 'Delete Record' is clicked
-    void onItemChangeClientClick( int position, String name, String phone, String comment );
+    void onItemChangeClientClick( int position, String name, String phone );
     // method to be called when the Button 'Delete Record' is clicked
     void onItemDeleteClientClick( int position );
     // method to be called when the Button 'Save' is clicked
-    void onButtonAddNewClient( String name, String phone, String comment );
+    void onButtonAddNewClient( String name, String phone );
     // method to be called when the Button 'Show records for chosen Client' is clicked
-    void onItemShowClientJob( String phone );
+    void onItemShowClientJob( String id );
     // method to destroy lifecycle of RecordActivity
     void onDestroy();
 }
@@ -221,7 +224,7 @@ interface PresenterListClient {
         void deleteClient ( int position );
         void changeClient ( int position, ClientData client );
         void getFromModelBroadcastReceiver( Contract.ModelClientList.OnPresenterClientListCallback act_listener, Intent intent );
-        void getArchiveClientByPhone ( String phone );
+        void getArchiveClientById ( String id );
     }
 
     interface Recycle {

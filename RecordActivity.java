@@ -80,6 +80,9 @@ public class RecordActivity extends AppCompatActivity implements Constants, Enum
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sharedPrefs = getSharedPreferences(PREF_ACTIVITY, MODE_PRIVATE);
+        SharedPreferences.Editor ed = sharedPrefs.edit();
+        ed.putString(CHILD_ACTIVITY, RECORD_ACTIVITY);
+        ed.apply();
 
         Intent intent = getIntent();
         String date = intent.getStringExtra(DATE_CODE);
@@ -253,7 +256,7 @@ public class RecordActivity extends AppCompatActivity implements Constants, Enum
                             || command.equals(SERVER_GET_CLIENT_ID)) {
                         callbackToClientFragmentBroadcast.onBroadcastReceive(intent);
 
-                    } else if (command.equals(SERVER_GET_ARCHIVE_BY_PHONE)) {
+                    } else if (command.equals(SERVER_GET_ARCHIVE_BY_ID)) {
                         callbackToHistoryFragmentBroadcast.onBroadcastReceive(intent);
                         vp_record.setCurrentItem(HISTORY_TAB);
 

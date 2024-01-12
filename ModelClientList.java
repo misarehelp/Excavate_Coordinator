@@ -58,10 +58,10 @@ class ModelClientList implements Contract.ModelClientList, Constants {
    }
 
    @Override
-   public void getArchiveClientByPhone( String phone) {
+   public void getArchiveClientById( String id) {
       //
-      code = SERVER_GET_ARCHIVE_BY_PHONE;
-      sendClientDataToServer( code, phone, "");
+      code = SERVER_GET_ARCHIVE_BY_ID;
+      sendClientDataToServer( code, id, "");
    }
 
    @Override

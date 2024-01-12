@@ -65,7 +65,8 @@ class ModelRecord implements Contract.ModelRecord, Constants {
       switch (code) {
          // Record Data was changed on the server
          case SERVER_ADD_RECORD:
-            convertAndSendJsonData(listener, code, "",  rec_data);
+         case SERVER_MARK_HOLIDAY:
+            convertAndSendJsonData(listener, SERVER_ADD_RECORD, "",  rec_data);
             break;
 
          case SERVER_CHANGE_RECORD:
@@ -74,6 +75,11 @@ class ModelRecord implements Contract.ModelRecord, Constants {
 
          case SERVER_DELETE_RECORD:
             sendRecordDataToServer( code, id_date, "");
+            break;
+
+         case SERVER_UNMARK_HOLIDAY:
+            id_date = rec_data.getDate() + DELIMITER + rec_data.getTime();
+            sendRecordDataToServer( SERVER_DELETE_RECORD, id_date, "");
             break;
 
          default:
@@ -179,14 +185,24 @@ class ModelRecord implements Contract.ModelRecord, Constants {
          String status = intent.getStringExtra(SENDER);
          ArrayList<RecordData> rec_data_array = dataParameters.getRecordDataArray();
 
-         if (status.equals(DATA_WAS_SAVED)) {
+         if (status.equals(DATA_WAS_SAVED) || status.equals(DATA_WAS_DELETED) ) {
             switch (code) {
                // Record Data was changed on the server
                case SERVER_ADD_RECORD:
+               case SERVER_MARK_HOLIDAY:
                   rec_data_array.add(rd);
                   break;
 
                case SERVER_DELETE_RECORD:
+                  rec_data_array.remove(dataParameters.getRecordPosition());
+                  break;
+
+               case SERVER_UNMARK_HOLIDAY:
+                  for (RecordData item: rec_data_array) {
+                     if (id_date.equals(item.getDate() + DELIMITER + item.getTime())) {
+                        rec_data_array.remove(item);
+                     }
+                  }
                   rec_data_array.remove(dataParameters.getRecordPosition());
                   break;
 
@@ -200,7 +216,7 @@ class ModelRecord implements Contract.ModelRecord, Constants {
             }
 
             dataParameters.setRecordDataArray(rec_data_array);
-            act_listener.onShowToast(DATA_WAS_SAVED);
+            act_listener.onShowToast(status);
             act_listener.onCloseRecordAction();
 
          } else {

@@ -31,7 +31,7 @@ public class ClientListFragment extends Fragment implements Constants, Enums, Co
     private ArrayList<ClientData> data = new ArrayList<>();
     private RecyclerView recyclerView;
     private ClientRecycleAdapter adapter;
-    private EditText et_name, et_phone, et_comment;
+    private EditText et_name, et_phone;
     private Button bt_back, bt_add_client, bt_save;
     private LinearLayout ll_new_client;
     public ClientListFragment () {
@@ -72,7 +72,6 @@ public class ClientListFragment extends Fragment implements Constants, Enums, Co
         ll_new_client = view.findViewById(R.id.ll_new_client);
         et_name = view.findViewById(R.id.et_name);
         et_phone = view.findViewById(R.id.et_phone);
-        et_comment = view.findViewById(R.id.et_comment);
 
         showNewClientLayout(View.GONE);
         buttonsSetOnClickListener();
@@ -114,7 +113,6 @@ public class ClientListFragment extends Fragment implements Constants, Enums, Co
         showNewClientLayout(View.VISIBLE);
         et_name.setText(name);
         et_phone.setText(phone);
-        et_comment.setText(comment);
     }
 
     private void showNewClientLayout( int state ) {
@@ -167,16 +165,15 @@ public class ClientListFragment extends Fragment implements Constants, Enums, Co
     private void checkCorrectInput() {
         String name = et_name.getText().toString();
         String phone = et_phone.getText().toString();
-        String comment = et_comment.getText().toString();
 
         if (name.trim().length() == 0 || phone.trim().length() == 0 ) {
             showToast(context.getResources().getString(R.string.incorrect_name_phone));
 
         } else {
             if (command.equals(SERVER_ADD_CLIENT)) {
-                presenterListClient.onButtonAddNewClient( name, phone, comment );
+                presenterListClient.onButtonAddNewClient( name, phone );
             } else {
-                presenterListClient.onItemChangeClientClick( position, name, phone, comment );
+                presenterListClient.onItemChangeClientClick( position, name, phone );
             }
 
             showNewClientLayout(View.GONE);
@@ -199,7 +196,6 @@ public class ClientListFragment extends Fragment implements Constants, Enums, Co
                 showNewClientLayout(View.VISIBLE);
                 et_name.setText(clientData.getName());
                 et_phone.setText(clientData.getPhone());
-                et_comment.setText(clientData.getComment());
                 break;
 
             case SERVER_DELETE_CLIENT:
@@ -212,7 +208,7 @@ public class ClientListFragment extends Fragment implements Constants, Enums, Co
 
             case SHOW_CLIENT_JOB:
                 callbackToActivity.onGetClientDataToActivity( clientData, true);
-                presenterListClient.onItemShowClientJob( clientData.getPhone() );
+                presenterListClient.onItemShowClientJob( Integer.toString(clientData.getId()) );
                 break;
             default:
         }

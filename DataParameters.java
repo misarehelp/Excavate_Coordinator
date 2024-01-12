@@ -5,11 +5,13 @@ import java.util.HashMap;
 
 public class DataParameters implements Contract.DataParameters {
 
+    String START_HOLIDAY_TIME = "01:00";
     private ArrayList<RecordData> rec_data_array;
     private ArrayList<ClientData> client_data_array;
     private String code;
     private int rec_pos, client_pos;
     private static DataParameters INSTANCE;
+    HashMap <String, Boolean> holiday_hashmap;
 
     private DataParameters() {
     }
@@ -40,6 +42,10 @@ public class DataParameters implements Contract.DataParameters {
     public int getClientPosition() {
         return client_pos;
     }
+    // Get Client position
+    public HashMap <String, Boolean> getHolidayHashMap() {
+        return holiday_hashmap;
+    }
 
     //setters
     @Override
@@ -64,12 +70,17 @@ public class DataParameters implements Contract.DataParameters {
     // get Calendar HashMap
     public HashMap<String, Integer> getCalendarHashmap() {
         HashMap<String, Integer> cal_hashmap = new HashMap<>();
+        holiday_hashmap = new HashMap<>();
         for (RecordData rd : rec_data_array) {
-            if (cal_hashmap.containsKey(rd.getDate())) {
-                int i = cal_hashmap.get(rd.getDate());
-                cal_hashmap.put(rd.getDate(), ++i );
+            if (!rd.getTime().equals(START_HOLIDAY_TIME)) {
+                if (cal_hashmap.containsKey(rd.getDate())) {
+                    int i = cal_hashmap.get(rd.getDate());
+                    cal_hashmap.put(rd.getDate(), ++i);
+                } else {
+                    cal_hashmap.put(rd.getDate(), 1);
+                }
             } else {
-                cal_hashmap.put(rd.getDate(), 1 );
+                holiday_hashmap.put(rd.getDate(), true);
             }
         }
         return cal_hashmap;

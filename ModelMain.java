@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 
 public class ModelMain implements Contract.ModelMain, Constants, Enums {
 
@@ -161,23 +162,23 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
                     case DATA_IS_READY:
 
                         final Calendar cal_zero = Calendar.getInstance();
-                        cal_zero.add( Calendar.DAY_OF_YEAR, -1);
-                        Date date_yesterday = cal_zero.getTime();
+                        cal_zero.add( Calendar.DAY_OF_YEAR, 1);
                         Date date_last_record = new Date();
                         Date date_past_first_record = new Date();
-                        Date date_actual_first_record = new Date();
+                        Date date_actual_first_record = cal_zero.getTime();
 
                         String str_last_rec = "";
                         String str_past_first_rec = "";
                         String str_actual_first_rec = "";
                         int old_recs = 0;
+                        int holiday_recs = 0;
 
                         ArrayList<String> array_level_json = new Gson().fromJson(message, ArrayList.class);
 
                         for (String item : array_level_json) {
                             RecordData rd = getFromJsonToRecordData(item); // get original (LATIN) Record Data
 
-                            if (!(null == rd)) {
+                            if ( null != rd ) {
                                 try {
                                     int client_id = rd.getId();
                                     if (client_id > NOT_IN_CLIENT_BASE) {
@@ -190,30 +191,37 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
 
                                 rec_data_array.add(rd);
 
-                                Date current_record = convertStringtoTimeStamp ( rd.getDate(), rd.getTime());
-                                // define the latest record
-                                if (current_record.after(date_last_record)) {
-                                    date_last_record = current_record;
-                                    str_last_rec = rd.getDate();
-                                }
-                                // define the first actual record
-                                if (current_record.before(date_actual_first_record) || current_record.after(date_yesterday) ) {
-                                    date_actual_first_record = current_record;
-                                    str_actual_first_rec = rd.getDate();
-                                }
-                                // define the earliest record
-                                if (current_record.before(date_past_first_record)) {
-                                    date_past_first_record = current_record;
-                                    str_past_first_rec = rd.getDate();
-                                }
-                                // define the nummber of past and actual records
-                                if (current_record.before(date_yesterday)) {
-                                    old_recs++;
+                                if ( !rd.getTime().equals(START_HOLIDAY_TIME) ) {
+
+                                    Date current_record = convertStringtoTimeStamp(rd.getDate(), rd.getTime());
+                                    // define the nummber of past and actual records
+                                    if (current_record.before(new Date())) {
+                                        old_recs++;
+                                        // define the earliest record
+                                        if (current_record.before(date_past_first_record)) {
+                                            date_past_first_record = current_record;
+                                            str_past_first_rec = rd.getDate();
+                                        }
+                                    } else {
+                                        // define the latest record
+                                        if (current_record.after(date_last_record)) {
+                                            date_last_record = current_record;
+                                            date_actual_first_record = current_record;
+                                            str_last_rec = rd.getDate();
+                                        }
+                                        // define the first actual record
+                                        if ( current_record.before(date_actual_first_record) ) {
+                                            date_actual_first_record = current_record;
+                                            str_actual_first_rec = rd.getDate();
+                                        }
+                                    }
+                                } else {
+                                    holiday_recs ++;
                                 }
                             }
                         }
 
-                        int len = rec_data_array.size();
+                        int len = rec_data_array.size() - holiday_recs;
                         if (len > 0) {
                             status = status + "Всего " + old_recs + " прошлых (c " + str_past_first_rec + " по настоящее) и " +
                                     (len - old_recs) + " актуальных записей (с " + str_actual_first_rec + " по " + str_last_rec + ")";
@@ -331,32 +339,37 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
         mainScreenData.setName(rd.getName());
         mainScreenData.setIndex(rd.getIndex());
 
-        if (rd.getJob().equals(INDEX_NOTE)) {
-            mainScreenData.setJob(rd.getJob());
-            mainScreenData.setType(INDEX_NOTE);
-            if (color_text_dark) {
-                mainScreenData.setColor(context.getResources().getColor(COLOR_NOTE_RECORD_DARK));
-            } else {
-                mainScreenData.setColor(context.getResources().getColor(COLOR_NOTE_RECORD_LGRAY));
-            }
-            mainScreenData.setResource(IMG_NOTE_RECORD);
-
+        if (rd.getTime().equals(START_HOLIDAY_TIME)) {
+            mainScreenData.setType(INDEX_SET_ON_HOLIDAY);
         } else {
 
-            mainScreenData.setJob(job_array[Integer.parseInt(rd.getJob())]);
-            if ( !rd.getIndexBit(rd.getBitsIndex(), BIT_QUESTION) ) {
-
+            if (rd.getJob().equals(INDEX_NOTE)) {
+                mainScreenData.setJob(rd.getJob());
+                mainScreenData.setType(INDEX_NOTE);
                 if (color_text_dark) {
-                    mainScreenData.setColor(context.getResources().getColor(COLOR_HAIRCUT_RECORD_DARK));
+                    mainScreenData.setColor(context.getResources().getColor(COLOR_NOTE_RECORD_DARK));
                 } else {
-                    mainScreenData.setColor(context.getResources().getColor(COLOR_HAIRCUT_RECORD_LGRAY));
+                    mainScreenData.setColor(context.getResources().getColor(COLOR_NOTE_RECORD_LGRAY));
                 }
-
-                mainScreenData.setResource(IMG_HAIRCUT_RECORD);
+                mainScreenData.setResource(IMG_NOTE_RECORD);
 
             } else {
-                mainScreenData.setColor(context.getResources().getColor(COLOR_HAIRCUT_RECORD_DOUBT));
-                mainScreenData.setResource(IMG_HAIRCUT_DOUBT);
+
+                mainScreenData.setJob(job_array[Integer.parseInt(rd.getJob())]);
+                if (!rd.getIndexBit(rd.getBitsIndex(), BIT_QUESTION)) {
+
+                    if (color_text_dark) {
+                        mainScreenData.setColor(context.getResources().getColor(COLOR_HAIRCUT_RECORD_DARK));
+                    } else {
+                        mainScreenData.setColor(context.getResources().getColor(COLOR_HAIRCUT_RECORD_LGRAY));
+                    }
+
+                    mainScreenData.setResource(IMG_HAIRCUT_RECORD);
+
+                } else {
+                    mainScreenData.setColor(context.getResources().getColor(COLOR_HAIRCUT_RECORD_DOUBT));
+                    mainScreenData.setResource(IMG_HAIRCUT_DOUBT);
+                }
             }
         }
         return mainScreenData;
@@ -424,7 +437,7 @@ public class ModelMain implements Contract.ModelMain, Constants, Enums {
             period_data.add( getListRecordData( temp_day_level ) );
         }
 
-        return new ListViewData(period_data, days_interval );
+        return new ListViewData( period_data, days_interval );
     }
 
     public Date convertStringtoTimeStamp (String date, String time) {

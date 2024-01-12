@@ -2,8 +2,15 @@ package ru.volganap.nikolay.haircut_schedule;
 
 interface Constants {
     String LOG_TAG = "myLogs";
+    String START_HOLIDAY_TIME = "01:00";
     String[] WEEKDAYS = {"Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"};
     int PERIOD = 7;
+
+    String RECORD_ACTIVITY = "record_activity";
+    String GENERAL_SETTINGS = "general_settings";
+    String CALENDAR_SETTINGS = "calendar_settings";
+    String CHILD_ACTIVITY = "child_activity";
+
     //****************  Themes  ***********************************************************************
     int THEME_LIGHT_SMALL = R.style.Theme_LightGreyStyle_1;
     int THEME_LIGHT_MEDIUM = R.style.Theme_LightGreyStyle_2;
@@ -17,6 +24,14 @@ interface Constants {
     String ASPECT = "pic_aspect";
     String COMPRESS = "pic_compress";
     String THEME = "theme";
+    String CALENDAR_BACKGROUND_WORKDAY = "calendar_bckgd_workday";
+    String CALENDAR_TEXT_WORKDAY = "calendar_text_workday";
+    String CALENDAR_BACKGROUND_HOLIDAY = "calendar_bckgd_holiday";
+    String CALENDAR_TEXT_HOLIDAY = "calendar_text_holiday";
+    String CALENDAR_BACKGROUND_TODAY = "calendar_bckgd_today";
+    String CALENDAR_TEXT_TODAY = "calendar_text_today";
+    String CALENDAR_BACKGROUND_SELECT_DAY = "calendar_bckgd_select_day";
+    String CALENDAR_TEXT_SELECT_DAY = "calendar_text_select_day";
 
 //******************************************************************************************************
     String COMMAND = "command";
@@ -43,15 +58,18 @@ interface Constants {
     String TYPE_CODE = "type_code";
     String INDEX_FREE_RECORD = "-1";
     String INDEX_NOTE = "-2";
+    String INDEX_SET_ON_HOLIDAY = "-3";
+    String INDEX_SET_OFF_HOLIDAY = "-4";
 
 //******************************************************************************************************
     int BIT_NOTE = 0;
     int BIT_HAS_PIC = 1;
     int BIT_REMIND_SENT = 2;
     int BIT_QUESTION = 3;
-    int BIT_CLIENT_BASE = 4;
+    int BIT_HOLIDAY = 4;
+//******************************************************************************************************
     int NOT_IN_CLIENT_BASE = -1;
-    //******************************************************************************************************
+//******************************************************************************************************
     int RECORD_HOST = 0;
     int CLIENT_LIST_HOST = 2;
     int HISTORY_LIST_HOST = 3;
@@ -61,22 +79,24 @@ interface Constants {
     String SERVER_CHANGE_RECORD = "server_change_record";
     String SERVER_SHOW_RECORD = "server_show_record";
     String SERVER_DELETE_RECORD = "server_delete_record";
+    String SERVER_MARK_HOLIDAY = "server_mark_holiday";
+    String SERVER_UNMARK_HOLIDAY = "server_unmark_holiday";
 
     String SERVER_GET_ALL = "server_get_all";
-    String SERVER_GET_ARCHIVE_BY_PHONE = "server_get_archive_by_phone";
-    String SERVER_GET_ARCHIVE_ALL = "server_get_archive_all";
+    String SERVER_GET_ARCHIVE_BY_ID = "server_get_archive_by_id";
+    String SERVER_DELETE_ARCHIVE = "server_delete_archive";
     String SERVER_DELETE_ALL = "server_delete_all";
     String SERVER_WAIT_FOR_ANSWER = "server_wait_for_answer";
     String SERVER_CHANGE_CONFIG = "server_change_config";
     String SERVER_ANSWER_CONFIG_CHANGED = "The config is changed,";
 //******************************************************************************************************
-    String SERVER_ADD_CLIENT = "server_add_client";
     String SERVER_GET_CLIENTS = "server_get_clients";
+    String SERVER_ADD_CLIENT = "server_add_client";
+    String SERVER_DELETE_CLIENT = "server_delete_client";
+    String SERVER_CHANGE_CLIENT = "server_change_client";
     String SERVER_GET_CLIENT_ID = "server_get_client_id";
     String GET_CLIENT_DATA_FROM_BASE = "get_client_data_from_base";
     String SHOW_CLIENT_JOB = "show_client_job";
-    String SERVER_DELETE_CLIENT = "server_delete_client";
-    String SERVER_CHANGE_CLIENT = "server_change_client";
 
     //******************************************************************************************************
     String PREF_ACTIVITY = "pref_activity";
