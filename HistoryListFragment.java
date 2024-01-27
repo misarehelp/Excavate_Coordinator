@@ -18,7 +18,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class HistoryListFragment extends Fragment implements Constants, Enums, Contract.RecordActivityToFragmentBroadcast,
+public class HistoryListFragment extends Fragment implements Constants, Contract.RecordActivityToFragmentBroadcast,
          Contract.RecordActivityToSomeFragment {
    private Context context;
    private RecyclerView recyclerView;

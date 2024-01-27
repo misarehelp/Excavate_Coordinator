@@ -12,7 +12,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-public class OkHttpRequest implements Constants, Enums {
+public class OkHttpRequest implements Constants {
     private String status = DATA_IS_NOT_READY;
 
     public void serverGetback( Context context, String command, String dateID, String data) {

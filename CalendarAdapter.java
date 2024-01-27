@@ -1,8 +1,6 @@
 package ru.volganap.nikolay.haircut_schedule;
 
 import android.content.Context;
-import android.graphics.Color;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,13 +16,16 @@ public class CalendarAdapter extends BaseAdapter implements Constants {
    private HashMap<String, Integer> cal_hashmap;
    HashMap <String, Boolean> holiday_hashmap;
    HashMap<String, Integer> calendar_colors;
+   private HashMap<String, Integer> note_hashmap;
 
-   public CalendarAdapter(Calendar c, int ct, HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap, HashMap<String, Integer> calendar_colors ) {
+   public CalendarAdapter(Calendar c, int ct, HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap,
+                           HashMap <String, Integer> note_hashmap, HashMap<String, Integer> calendar_colors ) {
       this.c = c;
       this.ct = ct;
       this.cal_hashmap = cal_hashmap;
       this.holiday_hashmap = holiday_hashmap;
       this.calendar_colors = calendar_colors;
+      this.note_hashmap = note_hashmap;
 
       Calendar current_cal = Calendar.getInstance();
 
@@ -71,28 +72,28 @@ public class CalendarAdapter extends BaseAdapter implements Constants {
          tv_day.setText("" + position);
 
          if ( null != holiday_hashmap && holiday_hashmap.containsKey(date)) {
-            //tv_day.setBackgroundColor(Color.GREEN);
-            //tv_event.setBackgroundColor(Color.GREEN);
             tv_day.setBackgroundColor(calendar_colors.get(CALENDAR_BACKGROUND_HOLIDAY));
             tv_event.setBackgroundColor(calendar_colors.get(CALENDAR_BACKGROUND_HOLIDAY));
          }
 
          if ( null != cal_hashmap && cal_hashmap.containsKey(date) ) {
-            tv_event.setText("(" + cal_hashmap.get(date).toString() + ")");
-            //tv_event.setBackgroundColor(Color.LTGRAY);
+            if ( null != note_hashmap && note_hashmap.containsKey(date) ) {
+               tv_event.setText("(" + cal_hashmap.get(date).toString() + "+" + note_hashmap.get(date).toString() + ")");
+            } else {
+               tv_event.setText("(" + cal_hashmap.get(date).toString() + ")");
+            }
             tv_event.setBackgroundColor(calendar_colors.get(CALENDAR_BACKGROUND_WORKDAY));
+
+         } else if ( null != note_hashmap && note_hashmap.containsKey(date) ) {
+            tv_event.setText("(" + note_hashmap.get(date).toString() + ")");
          }
 
          if (position == day) {
-            //tv_day.setTextColor(Color.WHITE);
-            //tv_day.setBackgroundColor(Color.BLUE);
             tv_day.setTextColor(calendar_colors.get(CALENDAR_TEXT_SELECT_DAY));
             tv_day.setBackgroundColor(calendar_colors.get(CALENDAR_BACKGROUND_SELECT_DAY));
          }
 
          if (position == current_day && current_month == month && current_year == year ) {
-            //tv_day.setTextColor(Color.MAGENTA);
-            //tv_day.setBackgroundColor(Color.YELLOW);
             tv_day.setTextColor(calendar_colors.get(CALENDAR_TEXT_TODAY));
             tv_day.setBackgroundColor(calendar_colors.get(CALENDAR_BACKGROUND_TODAY));
 
@@ -119,5 +120,4 @@ public class CalendarAdapter extends BaseAdapter implements Constants {
 
       return daysInMonth;
    }
-
 }

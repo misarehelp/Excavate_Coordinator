@@ -6,9 +6,11 @@ interface Constants {
     String[] WEEKDAYS = {"Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"};
     int PERIOD = 7;
 
+    //****************  Type of Activity  ***********************************************************************
     String RECORD_ACTIVITY = "record_activity";
     String GENERAL_SETTINGS = "general_settings";
     String CALENDAR_SETTINGS = "calendar_settings";
+    //******************************************************************************************************
     String CHILD_ACTIVITY = "child_activity";
 
     //****************  Themes  ***********************************************************************
@@ -56,6 +58,8 @@ interface Constants {
     String TIME_CODE = "time_code";
     String INDEX_CODE = "index_code";
     String TYPE_CODE = "type_code";
+
+    //******* Type of Records *******************************************************
     String INDEX_FREE_RECORD = "-1";
     String INDEX_NOTE = "-2";
     String INDEX_SET_ON_HOLIDAY = "-3";
@@ -73,23 +77,21 @@ interface Constants {
     int RECORD_HOST = 0;
     int CLIENT_LIST_HOST = 2;
     int HISTORY_LIST_HOST = 3;
-//******************************************************************************************************
 
+//******* Record Commands sent to Server *******************************************************
     String SERVER_ADD_RECORD = "server_add_record";
     String SERVER_CHANGE_RECORD = "server_change_record";
     String SERVER_SHOW_RECORD = "server_show_record";
     String SERVER_DELETE_RECORD = "server_delete_record";
     String SERVER_MARK_HOLIDAY = "server_mark_holiday";
     String SERVER_UNMARK_HOLIDAY = "server_unmark_holiday";
-
     String SERVER_GET_ALL = "server_get_all";
     String SERVER_GET_ARCHIVE_BY_ID = "server_get_archive_by_id";
     String SERVER_DELETE_ARCHIVE = "server_delete_archive";
-    String SERVER_DELETE_ALL = "server_delete_all";
-    String SERVER_WAIT_FOR_ANSWER = "server_wait_for_answer";
     String SERVER_CHANGE_CONFIG = "server_change_config";
-    String SERVER_ANSWER_CONFIG_CHANGED = "The config is changed,";
-//******************************************************************************************************
+    String SERVER_DELETE_ALL = "server_delete_all";
+
+    //******** Client Commands sent to Server *********************************************************
     String SERVER_GET_CLIENTS = "server_get_clients";
     String SERVER_ADD_CLIENT = "server_add_client";
     String SERVER_DELETE_CLIENT = "server_delete_client";
@@ -97,6 +99,10 @@ interface Constants {
     String SERVER_GET_CLIENT_ID = "server_get_client_id";
     String GET_CLIENT_DATA_FROM_BASE = "get_client_data_from_base";
     String SHOW_CLIENT_JOB = "show_client_job";
+
+    //******* Answer got from Server *******************************************************
+    String SERVER_WAIT_FOR_ANSWER = "server_wait_for_answer";
+    String SERVER_ANSWER_CONFIG_CHANGED = "The config is changed,";
 
     //******************************************************************************************************
     String PREF_ACTIVITY = "pref_activity";

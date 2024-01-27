@@ -6,12 +6,14 @@ import java.util.HashMap;
 public class DataParameters implements Contract.DataParameters {
 
     String START_HOLIDAY_TIME = "01:00";
+    String INDEX_NOTE = "-2";
     private ArrayList<RecordData> rec_data_array;
     private ArrayList<ClientData> client_data_array;
     private String code;
     private int rec_pos, client_pos;
     private static DataParameters INSTANCE;
     HashMap <String, Boolean> holiday_hashmap;
+    HashMap <String, Integer> note_hashmap;
 
     private DataParameters() {
     }
@@ -31,7 +33,7 @@ public class DataParameters implements Contract.DataParameters {
         return client_data_array;
     }
     // Get State Code
-    public String getStateCode() {
+    public String  getStateCode() {
         return code;
     }
     // Get Record position
@@ -42,9 +44,13 @@ public class DataParameters implements Contract.DataParameters {
     public int getClientPosition() {
         return client_pos;
     }
-    // Get Client position
+    // Get Holiday HashMap
     public HashMap <String, Boolean> getHolidayHashMap() {
         return holiday_hashmap;
+    }
+    // Get Note HashMap
+    public HashMap <String, Integer> getNoteHashMap() {
+        return note_hashmap;
     }
 
     //setters
@@ -55,7 +61,7 @@ public class DataParameters implements Contract.DataParameters {
         this.client_data_array = value;
     }
     // Set State Code
-    public void setStateCode(String code) {
+    public void setStateCode(String  code) {
         this.code = code;
     }
     // Get Record position
@@ -69,21 +75,33 @@ public class DataParameters implements Contract.DataParameters {
 
     // get Calendar HashMap
     public HashMap<String, Integer> getCalendarHashmap() {
-        HashMap<String, Integer> cal_hashmap = new HashMap<>();
+        HashMap<String, Integer> workday_hashmap = new HashMap<>();
         holiday_hashmap = new HashMap<>();
+        note_hashmap = new HashMap<>();
         for (RecordData rd : rec_data_array) {
+            // check if a record is not a Holiday
             if (!rd.getTime().equals(START_HOLIDAY_TIME)) {
-                if (cal_hashmap.containsKey(rd.getDate())) {
-                    int i = cal_hashmap.get(rd.getDate());
-                    cal_hashmap.put(rd.getDate(), ++i);
+                // check if a record is Work Day
+                if (!rd.getJob().equals(INDEX_NOTE)) {
+                    if (workday_hashmap.containsKey(rd.getDate())) {
+                        int i = workday_hashmap.get(rd.getDate());
+                        workday_hashmap.put(rd.getDate(), ++i);
+                    } else {
+                        workday_hashmap.put(rd.getDate(), 1);
+                    }
                 } else {
-                    cal_hashmap.put(rd.getDate(), 1);
+                    if (note_hashmap.containsKey(rd.getDate())) {
+                        int i = note_hashmap.get(rd.getDate());
+                        note_hashmap.put(rd.getDate(), ++i);
+                    } else {
+                        note_hashmap.put(rd.getDate(), 1);
+                    }
                 }
             } else {
                 holiday_hashmap.put(rd.getDate(), true);
             }
         }
-        return cal_hashmap;
+        return workday_hashmap;
     }
 
 }

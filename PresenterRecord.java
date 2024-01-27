@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 
-class PresenterRecord implements Contract.PresenterRecord, Constants, Enums, Contract.ModelRecord.OnPresenterRecordCallback {
+class PresenterRecord implements Contract.PresenterRecord, Constants, Contract.ModelRecord.OnPresenterRecordCallback {
 
    private Contract.ViewRecord recordView;
    private Contract.ModelRecord modelRecord;

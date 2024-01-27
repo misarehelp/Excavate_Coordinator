@@ -20,7 +20,6 @@ class ModelRecord implements Contract.ModelRecord, Constants {
    final String DELIMITER = "*";
    private DataParameters dataParameters;
    private Context context;
-   private String code;
    private RecordData rd;
    private String id_date;
 
@@ -60,9 +59,9 @@ class ModelRecord implements Contract.ModelRecord, Constants {
    @Override
    public void changeRecordData ( Contract.ModelRecord.OnPresenterRecordCallback listener, RecordData  rec_data, String command_code  ) {
       //
-      code = command_code;
+      //code = command_code;
 
-      switch (code) {
+      switch (command_code) {
          // Record Data was changed on the server
          case SERVER_ADD_RECORD:
          case SERVER_MARK_HOLIDAY:
@@ -70,11 +69,11 @@ class ModelRecord implements Contract.ModelRecord, Constants {
             break;
 
          case SERVER_CHANGE_RECORD:
-            convertAndSendJsonData(listener, code, id_date,  rec_data);
+            convertAndSendJsonData(listener, command_code, id_date,  rec_data);
             break;
 
          case SERVER_DELETE_RECORD:
-            sendRecordDataToServer( code, id_date, "");
+            sendRecordDataToServer( command_code, id_date, "");
             break;
 
          case SERVER_UNMARK_HOLIDAY:
@@ -183,10 +182,12 @@ class ModelRecord implements Contract.ModelRecord, Constants {
       new Handler().postDelayed(() -> {
 
          String status = intent.getStringExtra(SENDER);
+         String command = intent.getStringExtra(COMMAND);
+
          ArrayList<RecordData> rec_data_array = dataParameters.getRecordDataArray();
 
          if (status.equals(DATA_WAS_SAVED) || status.equals(DATA_WAS_DELETED) ) {
-            switch (code) {
+            switch (command) {
                // Record Data was changed on the server
                case SERVER_ADD_RECORD:
                case SERVER_MARK_HOLIDAY:

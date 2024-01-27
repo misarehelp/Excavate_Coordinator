@@ -20,7 +20,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class ClientListFragment extends Fragment implements Constants, Enums, Contract.ViewClientList, Contract.RecordActivityToFragmentBroadcast,
+public class ClientListFragment extends Fragment implements Constants, Contract.ViewClientList, Contract.RecordActivityToFragmentBroadcast,
         Contract.Recycle.ClientInterface, Contract.RecordActivityToSomeFragment {
 
     private Contract.ClientFragmentToRecordActivity callbackToActivity;
@@ -123,7 +123,6 @@ public class ClientListFragment extends Fragment implements Constants, Enums, Co
     @Override
     public void showClients(ArrayList<ClientData> data) {
         adapter.swap(data);
-        //this.data = data;
         adapter.notifyDataSetChanged();
         setRecordButtonsVisibility(DATA_WAS_SAVED);
     }

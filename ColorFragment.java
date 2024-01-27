@@ -1,18 +1,12 @@
 package ru.volganap.nikolay.haircut_schedule;
 
-import android.app.Activity;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
-
-import com.jaredrummler.android.colorpicker.ColorPickerDialog;
 import com.jaredrummler.android.colorpicker.ColorPreferenceCompat;
 
 import androidx.annotation.Nullable;
-import androidx.fragment.app.FragmentActivity;
-import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.SwitchPreference;
 
@@ -54,7 +48,7 @@ public class ColorFragment extends PreferenceFragmentCompat implements Constants
 
    private void initPrefSetup() {
 
-      switchPreference = (SwitchPreference) findPreference("calendar_sw");
+      switchPreference = findPreference("calendar_sw");
       sw_default_colors = switchPreference.isChecked();
 
       initColorPreference(CALENDAR_BACKGROUND_HOLIDAY, DEFAULT_CALENDAR_BACKGROUND_HOLIDAY);
@@ -69,7 +63,7 @@ public class ColorFragment extends PreferenceFragmentCompat implements Constants
 
    public void initColorPreference(String key, int default_color) {
 
-      ColorPreferenceCompat colorPreference = (ColorPreferenceCompat) findPreference(key);
+      ColorPreferenceCompat colorPreference = findPreference(key);
       //set Default vaulues
       if ( !sharedPrefs.contains(key) || !sw_default_colors ) {
          storeColorSharedPreferenceValue(key, default_color);
@@ -113,11 +107,9 @@ public class ColorFragment extends PreferenceFragmentCompat implements Constants
    }
 
    private void updateColorPreference(String key) {
-      ColorPreferenceCompat colorPreference = (ColorPreferenceCompat) findPreference(key);
+      ColorPreferenceCompat colorPreference = findPreference(key);
       colorPreference.setOnPreferenceChangeListener((preference, newValue) -> {
          if (key.equals(preference.getKey())) {
-            //String value = Integer.toHexString((int) newValue);
-            //storeSharedPreferenceValue(key, value);
             Log.d(LOG_TAG, "key: " + key + ", New default color is: #" + (int) newValue);
             storeColorSharedPreferenceValue(key, (int) newValue);
          }

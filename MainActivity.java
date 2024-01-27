@@ -13,7 +13,6 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -26,7 +25,6 @@ import android.widget.Toast;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
-import com.jaredrummler.android.colorpicker.ColorPickerDialogListener;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -58,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     // for Calendar
     private HashMap<String, Integer> cal_hashmap;
     private HashMap <String, Boolean> holiday_hashmap;
+    private HashMap <String, Integer> note_hashmap;
     private HashMap <String, Integer> calendar_colors;
     private Fragment calendarFragment = new CalendarFragment();
     private Contract.MainActivityToCalendarFragment callbackToCalendarFragment;
@@ -68,10 +67,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
 
         setContentView(R.layout.activity_main);
         initMainViewLayout();
-        // Init Settings Preferences
         initSharedPreferences();
-        /* StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
-        StrictMode.setVmPolicy(builder.build()); */
     }
 
     private void initMainViewLayout() {
@@ -127,7 +123,6 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
                         break;
                     case DAYS_BEFORE_NOW:
                         presenterMain.onChangeDaysBefore(getDaysBefore());
-                        //presenterMain.onChangeSharedPrefs(key);
                         break;
                     case CALENDAR_BACKGROUND_HOLIDAY:
                     case CALENDAR_BACKGROUND_WORKDAY:
@@ -138,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
                     case CALENDAR_TEXT_SELECT_DAY:
                     case CALENDAR_BACKGROUND_SELECT_DAY:
                         calendar_colors.put(key, sharedPrefs.getInt(key, 0));
-                        callbackToCalendarFragment.setCalendarHashMap(cal_hashmap, holiday_hashmap, calendar_colors);
+                        callbackToCalendarFragment.setCalendarHashMap(cal_hashmap, holiday_hashmap, note_hashmap, calendar_colors);
 
                         break;
                     default:
@@ -213,34 +208,21 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         if (remained) {
             requestPermissions(permissions, 0);
         }
-
-        PermittedTask scanPermissionsTask = new PermittedTask(this, Manifest.permission.CAMERA) {
-            @Override
-            protected void granted() {
-                presenterMain.onPermissionsGranted();
-            }
-
-            @Override
-            protected void denied() {
-                //runPreferenceActivity(GENERAL_SETTINGS, true);
-                Toast.makeText(getApplicationContext(), NEED_RESTART, Toast.LENGTH_LONG).show();
-            }
-        };
-        scanPermissionsTask.run();
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode,String permissions[], int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_SEND_SMS: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.d(LOG_TAG, "onRequestPermissionsResult: " + grantResults[0] );
-                } else {
-                    Log.d(LOG_TAG, "onRequestPermissionsResult: failed" );
-                }
-            }
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            Log.d(LOG_TAG, "onRequestPermissionsResult: " + grantResults[0] );
+            presenterMain.onPermissionsGranted();
+        } else {
+            Log.d(LOG_TAG, "onRequestPermissionsResult: failed" );
         }
+        /* switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_SEND_SMS: {
+            }
+        } */
     }
 
     @Override
@@ -286,9 +268,7 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         int theme_pos = Integer.parseInt(sharedPrefs.getString(THEME, "0"));
 
         switch (theme_pos) {
-            case 3:
-            case 4:
-            case 5:
+            case 3,4,5:
                 tabLayout.setTabTextColors( getResources().getColor(R.color.tabTextColorDark), getResources().getColor(R.color.colorGenTextDark));
                 tabLayout.setBackgroundColor(getResources().getColor(R.color.tabBackgroundDark));
                 tabLayout.setSelectedTabIndicatorColor(getResources().getColor(R.color.tabIndicatorColorDark));
@@ -301,7 +281,17 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
 
         new TabLayoutMediator(tabLayout, vpPager, false, (tab, position) -> {
             //tab.view.setBackgroundColor(Color.WHITE);
-            tab.setText(WEEKDAYS[position] + " (" + getNumberOfDayRecords(d_interval.get(position)) + ")");
+            int day_recs = getNumberOfDayRecords(d_interval.get(position));
+            int day_notes = getNumberOfDayNotes(d_interval.get(position));
+            String body;
+            if (day_recs == 0 && day_notes == 0) {
+                body = "";
+            } else {
+                body = "(" + (day_recs + day_notes) + ")";
+            }
+
+            tab.setText(WEEKDAYS[position] + '\n' + body);
+
         }).attach();
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
@@ -309,29 +299,53 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
             public void onTabSelected(TabLayout.Tab tab) {
 
                 int position = tab.getPosition();
-                int number = getNumberOfDayRecords(d_interval.get(position));
+                int day_recs = getNumberOfDayRecords(d_interval.get(position));
+                int day_notes = getNumberOfDayNotes(d_interval.get(position));
                 showTvDate(d_interval.get(position));
                 int day = Integer.parseInt(d_interval.get(position).substring(0,2));
 
                 callbackToCalendarFragment.syncCalendarDayToPage(day);
 
-                String add_status;
-                switch (number) {
+                String add_start = "В этот день ", add_recs ="", add_notes = "", add_status = "";
+
+                switch (day_recs) {
                     case 1:
-                        add_status = number + " запись";
+                        add_recs = day_recs + " запись";
                         break;
                     case 2, 3, 4:
-                        add_status = number + " записи";
+                        add_recs = day_recs + " записи";
                         break;
-                    case 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27:
-                        add_status = number + " записей";
+                    case 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20:
+                        add_recs = day_recs + " записей";
                         break;
                     case 0:
                     default:
-                        add_status = " нет записей";
                 }
 
-                refreshMainStatus("В этот день " + add_status);
+                switch (day_notes) {
+                    case 1:
+                        add_notes = day_notes + " заметка";
+                        break;
+                    case 2, 3, 4:
+                        add_notes = day_notes + " заметки";
+                        break;
+                    case 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20:
+                        add_notes = day_notes + " заметок";
+                        break;
+                    case 0:
+                    default:
+                }
+
+                if (day_recs == 0 && day_notes ==0) {
+                    add_status = add_start + "нет записей и заметок";
+
+                } else if (day_recs != 0 && day_notes !=0) {
+                    add_status = add_start + add_recs + " и " + add_notes;
+
+                } else {
+                    add_status = add_start + add_recs + add_notes;
+                }
+                refreshMainStatus(add_status);
             }
 
             @Override
@@ -350,6 +364,16 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
         int number;
         try {
             number = cal_hashmap.get(day);
+        } catch (Exception e) {
+            number = 0;
+        }
+        return number;
+    }
+
+    private int getNumberOfDayNotes (String day) {
+        int number;
+        try {
+            number = note_hashmap.get(day);
         } catch (Exception e) {
             number = 0;
         }
@@ -412,10 +436,11 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
     }
 
     @Override
-    public void passDataToCalendar(HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap ) {
+    public void passDataToCalendar(HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap, HashMap <String, Integer> note_hashmap ) {
         this.cal_hashmap = cal_hashmap;
         this.holiday_hashmap = holiday_hashmap;
-        callbackToCalendarFragment.setCalendarHashMap(cal_hashmap, holiday_hashmap, calendar_colors);
+        this.note_hashmap = note_hashmap;
+        callbackToCalendarFragment.setCalendarHashMap(cal_hashmap, holiday_hashmap, note_hashmap, calendar_colors);
     }
 
     @Override
@@ -514,9 +539,9 @@ public class MainActivity extends AppCompatActivity implements Constants, Enums,
                 Log.d(LOG_TAG, "MainActivity: onResume ");
             }
 
-            if (sharedPrefs.getString(CHILD_ACTIVITY, GENERAL_SETTINGS).equals(GENERAL_SETTINGS)) {
+            /* if (sharedPrefs.getString(CHILD_ACTIVITY, GENERAL_SETTINGS).equals(GENERAL_SETTINGS)) {
                 //initSharedPreferences();
-            }
+            } */
         }
     }
 

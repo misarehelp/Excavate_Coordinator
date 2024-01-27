@@ -15,7 +15,7 @@ import android.view.ViewGroup;
 
 import java.util.ArrayList;
 
-public class MainFragment extends Fragment implements Constants {
+public class MainFragment extends Fragment {
     private Context context;
     private ArrayList<MainScreenData> data;
     private int theme_type;

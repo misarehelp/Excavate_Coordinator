@@ -47,7 +47,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Consta
 
     public void initListPreference(String key, int default_pos) {
 
-        ListPreference lp = (ListPreference) findPreference(key);
+        ListPreference lp = findPreference(key);
         if (lp.getValue() == null) {
             switch (key) {
                 case ROTATE:
@@ -96,7 +96,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Consta
     }
 
     private void updateUserListPreference(String key) {
-        ListPreference lp = (ListPreference) findPreference(key);
+        ListPreference lp = findPreference(key);
         String value = lp.getValue();
         CharSequence entry = lp.getEntry();
         lp.setSummary(entry);
@@ -104,7 +104,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Consta
     }
 
     private void updateEditPreference(String key) {
-        EditTextPreference etp = (EditTextPreference) findPreference(key);
+        EditTextPreference etp = findPreference(key);
         String value = etp.getText();
         etp.setSummary(value);
         storeSharedPreferenceValue(key, value);

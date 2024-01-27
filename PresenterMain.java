@@ -105,7 +105,7 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
     // Second pass - to define period (present or past)
     public void onFinishedGetServerRecordsData () {
         if (mainView != null) {
-            mainView.passDataToCalendar( dataParameters.getCalendarHashmap(), dataParameters.getHolidayHashMap() );
+            mainView.passDataToCalendar( dataParameters.getCalendarHashmap(), dataParameters.getHolidayHashMap(), dataParameters.getNoteHashMap() );
         }
     }
 
@@ -133,7 +133,7 @@ public class PresenterMain implements Contract.PresenterMain, Constants, Enums, 
         String code = dataParameters.getStateCode();
         if (!code.equals(DATA_WAS_NOT_CHANGED)) {
             //there was made some chages in a record
-            mainView.passDataToCalendar( dataParameters.getCalendarHashmap(), dataParameters.getHolidayHashMap()  );
+            mainView.passDataToCalendar( dataParameters.getCalendarHashmap(), dataParameters.getHolidayHashMap(), dataParameters.getNoteHashMap() );
             modelMain.getDateFromModelMain( this, calendar_backup, dayOfWeek_backup);
         }
 

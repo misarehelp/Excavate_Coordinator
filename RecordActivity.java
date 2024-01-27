@@ -26,7 +26,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-public class RecordActivity extends AppCompatActivity implements Constants, Enums, Contract.ActivityReciever, Contract.RecordFragmentToRecordActivity,
+public class RecordActivity extends AppCompatActivity implements Constants, Contract.ActivityReciever, Contract.RecordFragmentToRecordActivity,
         Contract.ClientFragmentToRecordActivity, Contract.PhotoFragmentToRecordActivity, Contract.SomeFragmentToRecordActivity,
         Contract.Recycle.HistoryInterface {
 
@@ -303,13 +303,3 @@ public class RecordActivity extends AppCompatActivity implements Constants, Enum
 
     }
 }
-
-             /*
-             File currentFile = File.createTempFile("currentFile", ".jpg", path);
-             Uri currentUri = FileProvider.getUriForFile(this, this.getApplicationContext().getPackageName() + ".fileprovider", currentFile);
-             List<ResolveInfo> resInfoList = context.getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
-             for (ResolveInfo resolveInfo : resInfoList) {
-                 String packageName = resolveInfo.activityInfo.packageName;
-                 context.grantUriPermission(packageName, currentUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-             } */
-//startActivityForResult(intent, REQUEST_CAMERA);

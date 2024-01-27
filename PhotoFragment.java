@@ -17,7 +17,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class PhotoFragment extends Fragment implements Constants, Enums, Contract.RecordActivityToPhotoFragment {
+public class PhotoFragment extends Fragment implements Constants, Contract.RecordActivityToPhotoFragment {
 
     private Context context;
     private Button bt_back;

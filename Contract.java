@@ -25,7 +25,7 @@ public interface Contract {
         // Show Toast for View
         void showToast (String value);
         // pass Data To Calendar
-        void passDataToCalendar ( HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap );
+        void passDataToCalendar ( HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap, HashMap <String, Integer> note_hashmap );
     }
 
     interface ViewMainLayout {
@@ -91,7 +91,8 @@ public interface Contract {
 
     // ***************************************************************************************************
     interface MainActivityToCalendarFragment {
-        void setCalendarHashMap (HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap, HashMap<String, Integer> calendar_colors);
+        void setCalendarHashMap (HashMap<String, Integer> cal_hashmap, HashMap <String, Boolean> holiday_hashmap,
+                                 HashMap <String, Integer> note_hashmap, HashMap<String, Integer> calendar_colors);
         void syncCalendarDayToPage (int day);
     }
 
@@ -148,7 +149,7 @@ public interface Contract {
     interface ViewRecord {
         // fill in Records List
         void fillRecordInfoFields ( RecordData rec_data );
-        void setRecordButtonsVisibility (String permit_code);
+        void setRecordButtonsVisibility (String code);
         // Show Toast for View
         void showToast (String value);
         //set last phone number into TextView field

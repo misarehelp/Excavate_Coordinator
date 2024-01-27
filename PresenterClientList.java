@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import java.util.ArrayList;
 
-class PresenterClientList implements Contract.PresenterListClient, Constants, Contract.ModelClientList.OnPresenterClientListCallback, Enums {
+class PresenterClientList implements Contract.PresenterListClient, Constants, Contract.ModelClientList.OnPresenterClientListCallback {
 
    private Contract.ViewClientList clientListView;
    private Contract.ModelClientList modelClientList;
